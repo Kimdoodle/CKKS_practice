@@ -39,8 +39,8 @@ Ciphertext sgn(vector<double> input, vector<double> poly, int scale, int d, stri
 		//check ax^1
 		if (mode == "debug") {
 			cout << "d=" << k + 1 << endl;
-			cout << "\ti=1" << endl;
-			cout << "\t" << poly[1] << "(x): ";
+			cout << "\t" << poly[1] << "(x)" << endl;
+			cout << "\tptxt: ";
 			for (int i = 0; i < realValue.size(); i++) {
 				cout << realValue[i] * poly[1] << " , ";
 			}
@@ -48,7 +48,7 @@ Ciphertext sgn(vector<double> input, vector<double> poly, int scale, int d, stri
 			dec.decrypt(temp_y, temp1);
 			encoder.decode(temp1, temp2);
 			temp2.resize(input.size());
-			cout << "\t" << poly[1] << "(x)(Enc): ";
+			cout << "\tctxt: ";
 			printVector(temp2, false);
 		}
 
@@ -62,8 +62,9 @@ Ciphertext sgn(vector<double> input, vector<double> poly, int scale, int d, stri
 
 			//check ax^3,5,7...
 			if (mode == "debug") {
-				cout << "\ti=" << i << endl;
-				cout << "\t" << poly[i] << "(x^" << i << "): ";
+				cout << "\t--" << endl;
+				cout << "\t" << poly[i] << "(x^" << i << "): " << endl;
+				cout << "\tptxt: ";
 				for (int j = 0; j < realValue.size(); j++) {
 					cout << pow(realValue[j], i) * poly[i] << " , ";
 				}
@@ -71,7 +72,7 @@ Ciphertext sgn(vector<double> input, vector<double> poly, int scale, int d, stri
 				dec.decrypt(term, temp1);
 				encoder.decode(temp1, temp2);
 				temp2.resize(input.size());
-				cout << "\t" << poly[i] << "(x^" << i << ")(Enc): ";
+				cout << "\tctxt";
 				printVector(temp2, false);
 			}
 		}
@@ -87,8 +88,9 @@ Ciphertext sgn(vector<double> input, vector<double> poly, int scale, int d, stri
 			vector<double> output_vector;
 			encoder.decode(output_plain, output_vector);
 			output_vector.resize(input.size());
-			cout << "실제 값: "; printVector(realValue, false);
-			cout << "복호화값: "; printVector(output_vector, false);
+			cout << "\t--" << endl;
+			cout << "\t실제 값: "; printVector(realValue, false);
+			cout << "\t복호화값: "; printVector(output_vector, false);
 			cout << "--" << endl;
 		}
 	}
@@ -132,7 +134,6 @@ Ciphertext minMax_seal(vector<double> input, vector<double> poly, int scale, int
 	// |a-b|/2
 	vector<double> mmin = { input[0] - input[1] };
 	Ciphertext mmin_abs = abs_seal(mmin, poly, scale, d, encoder, enc, eva, context, rlk, dec);
-	Plaintext half;
 	if(mode == "max")
 		encoder.encode({ 0.5 }, scale, half);
 	else if(mode == "min")

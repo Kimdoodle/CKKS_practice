@@ -75,43 +75,65 @@ int main()
 	printVector(poly, true);
 	cout << "---" << endl;
 
-	//1. sgn(x) 계산
-	vector<double> realValue;
-	realValue.reserve(raw_inputs.size());
-	for (int i = 0; i < raw_inputs.size(); i++) {
-		realValue[i] = polypolyEvaluate(poly, raw_inputs[i], d);
-	}
-	Ciphertext sgnx = sgn(raw_inputs, poly, scale, d, "debug", encoder, enc, eva, context, rlk, dec);
+	//계산할 함수 선택
+	int mode;
+	cout << "1.sgn(x), 2.abs(x), 3.min/max(x)" << endl;
+	cin >> mode;
 	cout << "---" << endl;
-
-	//2. abs(x) 계산
-	for (int i = 0; i < raw_inputs.size(); i++) {
-		realValue[i] = abs(raw_inputs[i]);
-	}
-	Ciphertext absx = abs_seal(raw_inputs, poly, scale, d, encoder, enc, eva, context, rlk, dec);
 	
-	//3. min/max(x) 계산
-	int minValue, maxValue;
-	Ciphertext min_ctxt, max_ctxt;
-	if (raw_inputs.size() == 2) {
-		int a = raw_inputs[0];
-		int b = raw_inputs[1];
-		if (a < b) {
-			minValue = a;
-			maxValue = b;
+	vector<double> realValue;
+	Ciphertext result;
+	switch (mode) {
+	case 1:
+	{
+		//1. sgn(x) 계산
+		cout << "sgn(x)" << endl;
+		realValue.resize(raw_inputs.size());
+		for (int i = 0; i < raw_inputs.size(); i++) {
+			realValue[i] = polypolyEvaluate(poly, raw_inputs[i], d);
 		}
-		else if (a > b) {
-			minValue = b;
-			maxValue = a;
+		result = sgn(raw_inputs, poly, scale, d, "debug", encoder, enc, eva, context, rlk, dec);
+		cout << "---" << endl;
+		break;
+	}
+	case 2:
+	{
+		//2. abs(x) 계산
+		cout << "abs(x)" << endl;
+		for (int i = 0; i < raw_inputs.size(); i++) {
+			realValue[i] = abs(raw_inputs[i]);
 		}
-		min_ctxt = minMax_seal(raw_inputs, poly, scale, d, "min", encoder, enc, eva, context, rlk, dec);
-		max_ctxt = minMax_seal(raw_inputs, poly, scale, d, "max", encoder, enc, eva, context, rlk, dec);
+		result = abs_seal(raw_inputs, poly, scale, d, encoder, enc, eva, context, rlk, dec);
+		cout << "---" << endl;
+		break;
+	}
+	case 3:
+	{
+		//3. min/max(x) 계산
+		int minValue, maxValue;
+		Ciphertext min_ctxt, max_ctxt;
+		if (raw_inputs.size() == 2) {
+			int a = raw_inputs[0];
+			int b = raw_inputs[1];
+			if (a < b) {
+				minValue = a;
+				maxValue = b;
+			}
+			else if (a > b) {
+				minValue = b;
+				maxValue = a;
+			}
+			min_ctxt = minMax_seal(raw_inputs, poly, scale, d, "min", encoder, enc, eva, context, rlk, dec);
+			max_ctxt = minMax_seal(raw_inputs, poly, scale, d, "max", encoder, enc, eva, context, rlk, dec);
+		}
+		break;
+	}
 	}
 
 	//복호화
 	Plaintext plain_outputs;
-	cout << "Remaining Level: " << sgnx.coeff_modulus_size() << endl;
-	dec.decrypt(sgnx, plain_outputs);
+	cout << "Remaining Level: " << result.coeff_modulus_size() << endl;
+	dec.decrypt(result, plain_outputs);
 	vector<double> raw_outputs;
 	encoder.decode(plain_outputs, raw_outputs);
 	raw_outputs.resize(raw_inputs.size());
@@ -127,6 +149,8 @@ int main()
 		cout << abs(raw_outputs[i] - realValue[i]) << " , ";
 	}
 	cout << endl;
+
+	
 
 	return 0;
 }
