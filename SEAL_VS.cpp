@@ -1,9 +1,4 @@
-﻿#include "SEAL_VS.h"
-#include "compare.h"
-#include "print.h"
-#include "polymath.h"
-#include "arithmetic_seal.h"
-#include "function_seal.h"
+﻿#include "header/SEAL_VS.h"
 
 using namespace std;
 using namespace seal;

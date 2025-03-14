@@ -11,3 +11,8 @@
 
 // TODO: 여기서 프로그램에 필요한 추가 헤더를 참조합니다.
 #include "seal/seal.h"
+#include "arithmetic_seal.h"
+#include "compare.h"
+#include "function_seal.h"
+#include "polymath.h"
+#include "print.h"

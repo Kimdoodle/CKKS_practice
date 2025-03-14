@@ -1,5 +1,4 @@
-#include "SEAL_VS.h"
-#include "polymath.h"
+#include "header/SEAL_VS.h"
 
 using namespace std;
 

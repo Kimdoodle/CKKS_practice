@@ -1,6 +1,6 @@
 //암호문을 다항식으로 평가
 
-#include "SEAL_VS.h"
+#include "header/SEAL_VS.h"
 
 using namespace std;
 using namespace seal;

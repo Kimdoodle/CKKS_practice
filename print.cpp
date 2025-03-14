@@ -1,5 +1,4 @@
-#include "SEAL_VS.h"
-#include "print.h"
+#include "header/SEAL_VS.h"
 
 using namespace std;
 using namespace seal;

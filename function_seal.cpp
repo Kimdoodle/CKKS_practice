@@ -1,8 +1,5 @@
 
-#include "SEAL_VS.h"
-#include "arithmetic_seal.h"
-#include "print.h"
-#include "polymath.h"
+#include "header/SEAL_VS.h"
 
 using namespace seal;
 
