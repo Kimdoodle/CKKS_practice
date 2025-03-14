@@ -1,7 +1,5 @@
 #include "header/SEAL_VS.h"
 
-using namespace std;
-
 // 팩토리얼
 int factorial(int a) {
     int res = 1;

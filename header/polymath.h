@@ -1,10 +1,7 @@
 #ifndef POLYMATH_H
 #define POLYMATH_H
 
-#include <vector>
-#include <cmath>
-
-using namespace std;
+#include "SEAL_VS.h"
 
 int factorial(int a);
 double log2(double x, double base);

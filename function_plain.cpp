@@ -1,8 +1,5 @@
 #include "header/SEAL_VS.h"
 
-using namespace std;
-
-
 //c_n 계산
 double calC(int n) {
     return (2*n+1)/pow(4.0, n)*(factorial(2*n)/(factorial(n)*factorial(n)));
@@ -74,17 +71,17 @@ double newComp(double a, double b, int n, int d) {
 //f_n, g_n을 사용한 비교함수
 //double newCompG;
 
-////절댓값 함수
-//double calAbs(double a, int n, int d) {
-//    return a * signFunction(a, d);
-//}
-//
-////최솟값 함수
-//double calMin(double a, double b, int n, int d) {
-//    return (a+b)/2 - calAbs((a-b), n, d)/2;
-//}
-//
-////최댓값 함수
-//double calMax(double a, double b, int n, int d) {
-//    return (a+b)/2 + calAbs((a-b), n, d)/2;
-//}
+//절댓값 함수
+double calAbs(double a, int n, int d) {
+    return a * signFunction(a, d);
+}
+
+//최솟값 함수
+double calMin(double a, double b, int n, int d) {
+    return (a+b)/2 - calAbs((a-b), n, d)/2;
+}
+
+//최댓값 함수
+double calMax(double a, double b, int n, int d) {
+    return (a+b)/2 + calAbs((a-b), n, d)/2;
+}

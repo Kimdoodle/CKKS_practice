@@ -8,11 +8,17 @@
 #include <cmath>
 #include <cstdlib>
 #include <random>
+#include <memory>
+#include <stdexcept>
+#include "seal/seal.h"
+
+using namespace std;
+using namespace seal;
 
 // TODO: 여기서 프로그램에 필요한 추가 헤더를 참조합니다.
-#include "seal/seal.h"
-#include "arithmetic_seal.h"
-#include "compare.h"
-#include "function_seal.h"
+#include "CKKS_class.h"
 #include "polymath.h"
+#include "function_plain.h"
+#include "function_seal.h"
 #include "print.h"
+

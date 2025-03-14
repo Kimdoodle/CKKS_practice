@@ -1,8 +1,5 @@
 #include "header/SEAL_VS.h"
 
-using namespace std;
-using namespace seal;
-
 void printVector(vector<double> coeffs, bool asFunction) {
     size_t size = coeffs.size();
     for (size_t i = 0; i < size; i++) {

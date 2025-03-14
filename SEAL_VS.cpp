@@ -1,8 +1,5 @@
 ﻿#include "header/SEAL_VS.h"
 
-using namespace std;
-using namespace seal;
-
 int main()
 {
 	int num = 5; // sample수
@@ -14,40 +11,7 @@ int main()
 	double scale = pow(2.0, alpha);
 	size_t pmd = 16384;
 
-	EncryptionParameters parms(scheme_type::ckks);
-	parms.set_poly_modulus_degree(pmd);
-
-	vector<int> modulus;
-	modulus.push_back(big_moduli);
-	for (int i = 0; i < d*(2 * n + 2); i++)
-		modulus.push_back(small_moduli);
-	modulus.push_back(big_moduli);
-	
-	//debug - MaxBitCount
-	int r = 0;
-	for (int m : modulus) { r += m;	}
-	if (CoeffModulus::MaxBitCount(pmd) < r) {
-		cout << "MaxBitCount Error!" << endl;
-		cout << CoeffModulus::MaxBitCount(pmd) << " < " << r << endl;
-		return 0;
-	}
-
-	parms.set_coeff_modulus(CoeffModulus::Create(pmd, modulus));
-
-	SEALContext context(parms);
-	print_parameters(context);
-	KeyGenerator keygen(context);
-	auto sk = keygen.secret_key();
-	PublicKey pk;
-	keygen.create_public_key(pk);
-	RelinKeys rlk;
-	keygen.create_relin_keys(rlk);
-
-	Encryptor enc(context, pk);
-	Evaluator eva(context);
-	Decryptor dec(context, sk);
-	CKKSEncoder encoder(context);
-	size_t slot_count = encoder.slot_count();
+	ckks_build ckks = ckks_build("nodebug", alpha, n, d, big_moduli, small_moduli, scale, pmd);
 
 	//입력 - 임의로 num개 데이터 샘플링
 	vector<double> raw_inputs;
@@ -77,71 +41,52 @@ int main()
 	cout << "---" << endl;
 	
 	vector<double> realValue;
+	realValue.resize(raw_inputs.size());
 	Ciphertext result;
+	Ciphertext x = ckks.encrypt(raw_inputs);
 	switch (mode) {
 	case 1:
-	{
 		//1. sgn(x) 계산
 		cout << "sgn(x)" << endl;
-		realValue.resize(raw_inputs.size());
 		for (int i = 0; i < raw_inputs.size(); i++) {
 			realValue[i] = polypolyEvaluate(poly, raw_inputs[i], d);
 		}
-		result = sgn(raw_inputs, poly, scale, d, "debug", encoder, enc, eva, context, rlk, dec);
+		result = sgn("debug", x, poly, d, ckks);
 		cout << "---" << endl;
 		break;
-	}
 	case 2:
-	{
 		//2. abs(x) 계산
 		cout << "abs(x)" << endl;
 		for (int i = 0; i < raw_inputs.size(); i++) {
-			realValue[i] = abs(raw_inputs[i]);
+			realValue[i] = calAbs(raw_inputs[i], n, d);
 		}
-		result = abs_seal(raw_inputs, poly, scale, d, encoder, enc, eva, context, rlk, dec);
+		result = abs_seal(x, poly, d, ckks);
 		cout << "---" << endl;
 		break;
-	}
 	case 3:
-	{
-		//3. min/max(x) 계산
-		int minValue, maxValue;
-		Ciphertext min_ctxt, max_ctxt;
+		//3. max(x) 계산
+		double maxValue;
+		Ciphertext max_ctxt;
 		if (raw_inputs.size() == 2) {
-			int a = raw_inputs[0];
-			int b = raw_inputs[1];
-			if (a < b) {
-				minValue = a;
-				maxValue = b;
-			}
-			else if (a > b) {
-				minValue = b;
-				maxValue = a;
-			}
-			min_ctxt = minMax_seal(raw_inputs, poly, scale, d, "min", encoder, enc, eva, context, rlk, dec);
-			max_ctxt = minMax_seal(raw_inputs, poly, scale, d, "max", encoder, enc, eva, context, rlk, dec);
+			maxValue = raw_inputs[0] > raw_inputs[1] ? raw_inputs[0] : raw_inputs[1];
+			max_ctxt = max_seal(raw_inputs, poly, d, ckks);
 		}
 		break;
-	}
 	}
 
 	//복호화
-	Plaintext plain_outputs;
 	cout << "Remaining Level: " << result.coeff_modulus_size() << endl;
-	dec.decrypt(result, plain_outputs);
-	vector<double> raw_outputs;
-	encoder.decode(plain_outputs, raw_outputs);
-	raw_outputs.resize(raw_inputs.size());
+	vector<double> plain_outputs = ckks.decode_ctxt(result);
 	cout << "Decryption Completed." << endl << "---" << endl;
 
 	//결과 출력
 	cout << "암호화 근사 결과" << endl;
-	printVector(raw_outputs, false);
+	printVector(plain_outputs, false);
 	cout << "비암호화 근사 결과" << endl;
 	printVector(realValue, false);
 	cout << "오차" << endl;
-	for (int i = 0; i < raw_outputs.size(); i++) {
-		cout << abs(raw_outputs[i] - realValue[i]) << " , ";
+	for (int i = 0; i < plain_outputs.size(); i++) {
+		cout << abs(plain_outputs[i] - realValue[i]) << " , ";
 	}
 	cout << endl;
 
