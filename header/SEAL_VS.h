@@ -10,6 +10,7 @@
 #include <random>
 #include <memory>
 #include <stdexcept>
+#include <iomanip>
 #include "seal/seal.h"
 
 using namespace std;

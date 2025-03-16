@@ -54,21 +54,30 @@ void ckks_build::calscales()
     }
 }
 
-// encode
+// encode coeff. Only 1 value needed.
+Plaintext ckks_build::encode(double input)
+{
+    Plaintext plain;
+    encoder->encode(input, scale, plain);
+    return plain;
+}
+// encode coeff, but scale, parms_id will be equal to ctxt's.
+Plaintext ckks_build::encode(const double& input, Ciphertext& ctxt)
+{
+    Plaintext plain;
+    encoder->encode(input, ctxt.parms_id(), ctxt.scale(), plain);
+    return plain;
+}
+
+// encode input value. vector needed.
 Plaintext ckks_build::encode(const vector<double>& input)
 {
     Plaintext plain;
     encoder->encode(input, scale, plain);
     return plain;
 }
-Plaintext ckks_build::encode(const double& input, Ciphertext& ctxt)
-{
-    Plaintext plain;
-    encoder->encode({ input }, ctxt.parms_id(), ctxt.scale(), plain);
-    return plain;
-}
 
-// encrypt
+// encrypt plaintext.
 Ciphertext ckks_build::encrypt(const Plaintext& plain)
 {
     Ciphertext ctxt;
@@ -76,20 +85,22 @@ Ciphertext ckks_build::encrypt(const Plaintext& plain)
     return ctxt;
 }
 
-// encode + encrypt
+// encode+encrypt plain value.
 Ciphertext ckks_build::encrypt(double input)
-{
-    return encrypt(encode({ input }));
-}
-
-Ciphertext ckks_build::encrypt(const vector<double>& input)
 {
     return encrypt(encode(input));
 }
 
+// encode+encrypt plain value, but params will be equal with ctxt's.
 Ciphertext ckks_build::encrypt(const double& input, Ciphertext& ctxt)
 {
     return encrypt(encode(input, ctxt));
+}
+
+// encode+encrypt plain vector
+Ciphertext ckks_build::encrypt(const vector<double>& input)
+{
+    return encrypt(encode(input));
 }
 
 // decrypt
@@ -139,28 +150,31 @@ void ckks_build::add(Ciphertext& ctxt1, Ciphertext& ctxt2)
 }
 void ckks_build::add(Plaintext& ptxt, Ciphertext& ctxt)
 {
-    scale_equal(ptxt, ctxt);
+    //scale_equal(ptxt, ctxt);
     eva->add_plain_inplace(ctxt, ptxt);
 }
 
 // Multiply
 void ckks_build::mult(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& result)
 {
-    modulus_equal(ctxt1, ctxt2);
+    //modulus_equal(ctxt1, ctxt2);
+    scale_equal(ctxt1, ctxt2);
     eva->multiply(ctxt1, ctxt2, result);
     eva->relinearize_inplace(result, rlk);
     eva->rescale_to_next_inplace(result);
 }
 void ckks_build::mult(Ciphertext& ctxt1, Ciphertext& ctxt2)
 {
-    modulus_equal(ctxt1, ctxt2);
+    //modulus_equal(ctxt1, ctxt2);
+    scale_equal(ctxt1, ctxt2);
     eva->multiply_inplace(ctxt1, ctxt2);
     eva->relinearize_inplace(ctxt1, rlk);
     eva->rescale_to_next_inplace(ctxt1);
 }
 void ckks_build::mult(Plaintext& ptxt, Ciphertext& ctxt)
 {
-    modulus_switch(ptxt, ctxt.parms_id());
+    //modulus_switch(ptxt, ctxt.parms_id());
+    scale_equal(ptxt, ctxt);
     eva->multiply_plain_inplace(ctxt, ptxt);
     eva->rescale_to_next_inplace(ctxt);
 }
@@ -174,20 +188,17 @@ void ckks_build::square(Ciphertext& ctxt)
 Ciphertext ckks_build::exp(const Ciphertext& x, int d)
 {
     Ciphertext result, squareX;
-    if (d % 2 == 0) {
-        result = encrypt(1.0);
-    }
-    else {
-        result = x;
-    }
+    result = encrypt(1.0);
 
     squareX = x;
-    d /= 2;
-    while (d > 0) {
-        square(squareX);
+    while(true) {
         if (d % 2) {
             mult(result, squareX);
         }
+        if (d > 0) {
+            square(squareX);
+        }
+        else break;
         d /= 2;
     }
     return result;
@@ -210,33 +221,36 @@ void ckks_build::modulus_equal(Ciphertext& ctxt1, Ciphertext& ctxt2)
 //두 암호문의 scale 통일
 void ckks_build::scale_equal(Ciphertext& ctxt1, Ciphertext& ctxt2)
 {
-    //while (ctxt1.coeff_modulus_size() != ctxt2.coeff_modulus_size()) {
-    //    if (ctxt1.coeff_modulus_size() > ctxt2.coeff_modulus_size()) {
-    //        Plaintext p = encode({ 1.0 });
-    //        mult(p, ctxt1);
-    //    }
-    //    else if (ctxt1.coeff_modulus_size() < ctxt2.coeff_modulus_size()) {
-    //        Plaintext p = encode({ 1.0 });
-    //        mult(p, ctxt2);
-    //    }
-    //    //debug
-    //    if (mode == "debug") {
-    //        if(ctxt1.scale() != scales[scales.size() - ctxt1.coeff_modulus_size()])
-    //            cout << "RESCALING ERROR!!!! ctxt1." << endl;
-    //        if (ctxt2.scale() != scales[scales.size() - ctxt2.coeff_modulus_size()])
-    //            cout << "RESCALING ERROR!!!! ctxt2." << endl;
-    //    }
-    //}
-    if (ctxt1.coeff_modulus_size() > ctxt2.coeff_modulus_size()) {
-        modulus_switch(ctxt1, ctxt2.parms_id());
-        eva->rescale_to_inplace(ctxt1, ctxt2.parms_id());
+    while (ctxt1.coeff_modulus_size() > ctxt2.coeff_modulus_size()) {
+        Plaintext p = encode(1.0, ctxt1);
+        mult(p, ctxt1);
     }
-    else if (ctxt1.coeff_modulus_size() < ctxt2.coeff_modulus_size()) {
-        modulus_switch(ctxt2, ctxt1.parms_id());
-        eva->rescale_to_inplace(ctxt2, ctxt1.parms_id());
+
+    while (ctxt1.coeff_modulus_size() < ctxt2.coeff_modulus_size()) {
+        Plaintext p = encode(1.0, ctxt2);
+        mult(p, ctxt2);
+    }
+    //debug
+    if (mode == "debug") {
+        if (ctxt1.scale() != scales[scales.size() - ctxt1.coeff_modulus_size()]) {
+            cout << "ctxt1 RESCALING ERROR!!!!" << endl;
+            cout << "coeff: " << ctxt1.coeff_modulus_size() << " , " << ctxt2.coeff_modulus_size() << endl;
+            cout << "scale: " << ctxt1.scale() << " , " << ctxt2.scale() << endl;
+            cout << "---" << endl;
+        }
+            
+        if (ctxt2.scale() != scales[scales.size() - ctxt2.coeff_modulus_size()]) {
+            cout << "ctxt2 RESCALING ERROR!!!!" << endl;
+            cout << "coeff: " << ctxt1.coeff_modulus_size() << " , " << ctxt2.coeff_modulus_size() << endl;
+            cout << "scale: " << ctxt1.scale() << " , " << ctxt2.scale() << endl;
+            cout << "---" << endl;
+        }
     }
 }
 void ckks_build::scale_equal(Plaintext& ptxt, Ciphertext& ctxt)
 {
-    //Todo if necessary.
+    Ciphertext x;
+    enc->encrypt(ptxt, x);
+    scale_equal(x, ctxt);
+    dec->decrypt(x, ptxt);
 }

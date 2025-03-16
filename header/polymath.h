@@ -5,11 +5,13 @@
 
 int factorial(int a);
 double log2(double x, double base);
+vector<double> duplicate_vector(double input, int size);
 vector<vector<double>> createToeplitzMatrix(const vector<double>& coeffs, int result_size);
 vector<double> multiplyMatrixVector(const vector<vector<double>>& matrix, const vector<double>& vec);
 vector<double> multPolynomial(const vector<double>& a, const vector<double>& b);
 vector<double> powerPolynomial(const vector<double>& poly, int exponent);
 double polyEvaluate(const vector<double>& poly, double input);
 double polypolyEvaluate(const vector<double>& poly, double input, int d);
+vector<double> polypolyEvaluate(const vector<double>& poly, vector<double>& input);
 
 #endif // POLYMATH_H

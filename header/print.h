@@ -3,7 +3,7 @@
 
 #include "SEAL_VS.h"
 
-void printVector(std::vector<double> coeffs, bool asFunction);
-void print_parameters(const seal::SEALContext& context);
+void printVector(vector<double>& coeffs, bool asFunction, int pre = 4);
+void print_parameters(const SEALContext& context);
 
 #endif // PRINT_H

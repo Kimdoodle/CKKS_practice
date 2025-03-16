@@ -13,6 +13,14 @@ double log2(double x, double base) {
     return log(x)/log(base);
 }
 
+//특정 값을 size만큼 복제한 벡터 생성
+vector<double> duplicate_vector(double input, int size)
+{
+    vector<double> res;
+    for (int i = 0; i < size; i++) res.push_back(input);
+    return res;
+}
+
 /*
     다항식 곱셈을 통한 계수 벡터 생성
     1. Toeplitz 행렬을 생성
@@ -79,6 +87,7 @@ double polyEvaluate(const vector<double>& poly, double input) {
     return result;
 }
 
+
 //다항식 반복 계산함수
 double polypolyEvaluate(const vector<double>& poly, double input, int d) {
     double x = input;
@@ -86,4 +95,12 @@ double polypolyEvaluate(const vector<double>& poly, double input, int d) {
         x = polyEvaluate(poly, x);
     }
     return x;
+}
+vector<double> polypolyEvaluate(const vector<double>& poly, vector<double>& input) {
+    vector<double> result;
+    result.resize(input.size());
+    for (int i = 0; i < input.size(); i++) {
+        result[i] = polyEvaluate(poly, input[i]);
+    }
+    return result;
 }

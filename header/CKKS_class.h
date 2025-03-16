@@ -26,12 +26,13 @@ public:
     ckks_build(string mode, int alpha, int n, int d, int big_moduli, int small_moduli, double scale, size_t pmd);
     void calscales();
 
-    Plaintext encode(const vector<double>& input);
+    Plaintext encode(double input);
     Plaintext encode(const double& input, Ciphertext& ctxt);
+    Plaintext encode(const vector<double>& input);
     Ciphertext encrypt(const Plaintext& plain);
     Ciphertext encrypt(double input);
-    Ciphertext encrypt(const vector<double>& input);
     Ciphertext encrypt(const double& input, Ciphertext& ctxt);
+    Ciphertext encrypt(const vector<double>& input);
 
     Plaintext decrypt(Ciphertext& ctxt);
     vector<double> decode(const Plaintext& ptxt);
