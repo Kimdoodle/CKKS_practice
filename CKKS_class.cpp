@@ -38,7 +38,7 @@ ckks_build::ckks_build(string mode, int alpha, int n, int d, int big_moduli, int
     encoder = make_unique<CKKSEncoder>(*context);
 
     //debug - calculate scale factors
-    if(mode == "debug")
+    if(mode == "debug2")
         calscales();
 }
 
@@ -231,21 +231,21 @@ void ckks_build::scale_equal(Ciphertext& ctxt1, Ciphertext& ctxt2)
         mult(p, ctxt2);
     }
     //debug
-    if (mode == "debug") {
-        if (ctxt1.scale() != scales[scales.size() - ctxt1.coeff_modulus_size()]) {
-            cout << "ctxt1 RESCALING ERROR!!!!" << endl;
-            cout << "coeff: " << ctxt1.coeff_modulus_size() << " , " << ctxt2.coeff_modulus_size() << endl;
-            cout << "scale: " << ctxt1.scale() << " , " << ctxt2.scale() << endl;
-            cout << "---" << endl;
-        }
-            
-        if (ctxt2.scale() != scales[scales.size() - ctxt2.coeff_modulus_size()]) {
-            cout << "ctxt2 RESCALING ERROR!!!!" << endl;
-            cout << "coeff: " << ctxt1.coeff_modulus_size() << " , " << ctxt2.coeff_modulus_size() << endl;
-            cout << "scale: " << ctxt1.scale() << " , " << ctxt2.scale() << endl;
-            cout << "---" << endl;
-        }
-    }
+    //if (mode == "debug") {
+    //    if (ctxt1.scale() != scales[scales.size() - ctxt1.coeff_modulus_size()]) {
+    //        cout << "ctxt1 RESCALING ERROR!!!!" << endl;
+    //        cout << "coeff: " << ctxt1.coeff_modulus_size() << " , " << ctxt2.coeff_modulus_size() << endl;
+    //        cout << "scale: " << ctxt1.scale() << " , " << ctxt2.scale() << endl;
+    //        cout << "---" << endl;
+    //    }
+    //        
+    //    if (ctxt2.scale() != scales[scales.size() - ctxt2.coeff_modulus_size()]) {
+    //        cout << "ctxt2 RESCALING ERROR!!!!" << endl;
+    //        cout << "coeff: " << ctxt1.coeff_modulus_size() << " , " << ctxt2.coeff_modulus_size() << endl;
+    //        cout << "scale: " << ctxt1.scale() << " , " << ctxt2.scale() << endl;
+    //        cout << "---" << endl;
+    //    }
+    //}
 }
 void ckks_build::scale_equal(Plaintext& ptxt, Ciphertext& ctxt)
 {
