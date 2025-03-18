@@ -9,8 +9,8 @@ ckks_build::ckks_build(string mode, int n, int d, int big_moduli, int small_modu
     parms = make_unique<EncryptionParameters>(scheme_type::ckks);
     parms->set_poly_modulus_degree(pmd);
     
-    modulus_chain_mode1(big_moduli, small_moduli, d);
-    //modulus_chain_mode2(big_moduli, small_moduli, 2, 3);
+    //modulus_chain_mode1(big_moduli, small_moduli, d);
+    modulus_chain_mode2(big_moduli, small_moduli, 2, 3);
 
     //check MaxBitCount
     int r = 0;
@@ -297,7 +297,9 @@ void ckks_build::mul_plain(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destin
 void ckks_build::mul_cipher(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& ctxt3, Ciphertext& destination)
 {
     eva->multiply(ctxt1, ctxt2, destination);
+    eva->relinearize_inplace(destination, rlk);
     eva->multiply(destination, ctxt3, destination);
+    eva->relinearize_inplace(destination, rlk);
     eva->rescale_to_next_inplace(destination);
 }
 
