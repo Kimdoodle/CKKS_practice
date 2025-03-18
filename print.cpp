@@ -2,6 +2,7 @@
 
 // print vector elements. Choose vector is function's coeff or not.
 void printVector(vector<double>& coeffs, bool asFunction, int pre) {
+    cout << fixed << setprecision(pre);
     size_t size = coeffs.size();
     for (size_t i = 0; i < size; i++) {
         if (coeffs[i] == 0.0) continue;
@@ -9,7 +10,7 @@ void printVector(vector<double>& coeffs, bool asFunction, int pre) {
         cout << coeffs[i];
 
         if (asFunction) {
-            cout << "(x" << fixed << setprecision(pre) << i << ")";
+            cout << "(x" << i << ")";
         }
         if (i != (size - 1)) {
             if (asFunction)
@@ -50,26 +51,26 @@ void print_parameters(const SEALContext& context)
     use between evaluation levels.
     print remaining level, decryption result, real calculation result.
 */
-void printStep(Ciphertext& y, vector<double>& real_result, vector<double>& poly, int iter, int size, ckks_build& ckks)
+void printStep(Ciphertext& y, vector<double>& real_result, vector<double>& poly, int iter, int size, ckks_build& ckks, int pre)
 {
     cout << "d = " << iter + 1 << endl;
     //Remaining Levels
     cout << "\tRemaining Level: " << y.coeff_modulus_size() << endl;
     real_result = polypolyEvaluate(poly, real_result);
-    printResult(y, real_result, size, ckks);
+    printResult(y, real_result, size, ckks, pre);
 }
 
 /*
     print decryption result and real evaluation result.
 */
-void printResult(Ciphertext& y, vector<double>& real_result, int size, ckks_build& ckks)
+void printResult(Ciphertext& y, vector<double>& real_result, int size, ckks_build& ckks, int pre)
 {
     //decryption result
-    cout << "Final decrypt value\n\t";
+    cout << "\tdecrypt value\n\t";
     vector<double> result = ckks.decode_ctxt(y);
     result.resize(size);
-    printVector(result, false);
+    printVector(result, false, pre);
     //real result
-    cout << "real value\n\t";
-    printVector(real_result, false);
+    cout << "\treal value\n\t";
+    printVector(real_result, false, pre);
 }

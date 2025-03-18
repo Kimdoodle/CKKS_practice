@@ -3,7 +3,7 @@
 #
 
 # 이 프로젝트의 실행 파일에 소스를 추가합니다.
-add_executable (SEAL_VS "SEAL_VS.cpp" "header/SEAL_VS.h" "function_plain.cpp" "header/function_plain.h"   "polymath.cpp" "header/polymath.h" "print.cpp" "header/print.h" "function_seal.cpp" "header/function_seal.h" "CKKS_class.cpp" "header/CKKS_class.h")
+add_executable (SEAL_VS "SEAL_VS.cpp" "header/SEAL_VS.h" "function_plain.cpp" "header/function_plain.h"   "polymath.cpp" "header/polymath.h" "print.cpp" "header/print.h" "function_seal.cpp" "header/function_seal.h" "CKKS_class.cpp" "header/CKKS_class.h" "header/measure_time.h" "measure_time.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET SEAL_VS PROPERTY CXX_STANDARD 20)

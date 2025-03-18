@@ -11,10 +11,12 @@
 #include <memory>
 #include <stdexcept>
 #include <iomanip>
+#include <chrono>
 #include "seal/seal.h"
 
 using namespace std;
 using namespace seal;
+using namespace std::chrono;
 
 // TODO: 여기서 프로그램에 필요한 추가 헤더를 참조합니다.
 #include "CKKS_class.h"
@@ -22,4 +24,5 @@ using namespace seal;
 #include "function_plain.h"
 #include "function_seal.h"
 #include "print.h"
+#include "measure_time.h"
 

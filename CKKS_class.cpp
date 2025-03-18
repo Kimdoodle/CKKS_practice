@@ -1,26 +1,23 @@
 #include "header/SEAL_VS.h"
 
 //Generator
-ckks_build::ckks_build(string mode, int alpha, int n, int d, int big_moduli, int small_moduli, double scale, size_t pmd)
+ckks_build::ckks_build(string mode, int n, int d, int big_moduli, int small_moduli, double scale, size_t pmd)
 {
     this->mode = mode;
-    this->alpha = alpha;
     this->scale = scale;
     
     parms = make_unique<EncryptionParameters>(scheme_type::ckks);
     parms->set_poly_modulus_degree(pmd);
     
-    vector<int> modulus;
-    modulus.push_back(big_moduli);
-    for (int i = 0; i < d * (2 * n + 2); i++)
-        modulus.push_back(small_moduli);
-    modulus.push_back(big_moduli);
+    modulus_chain_mode1(big_moduli, small_moduli, d);
+    //modulus_chain_mode2(big_moduli, small_moduli, 2, 3);
 
+    //check MaxBitCount
     int r = 0;
     for (int m : modulus) { r += m; }
     if (CoeffModulus::MaxBitCount(pmd) < r) {
-        cerr << "Error: " << CoeffModulus::MaxBitCount(pmd) << " < " << r << endl;
-        throw invalid_argument("MaxBitCount Error!");
+        cout << "Error: Max Modulus Size " << CoeffModulus::MaxBitCount(pmd) << " < " << r << endl;
+        exit(0);
     }
 
     parms->set_coeff_modulus(CoeffModulus::Create(pmd, modulus));
@@ -38,19 +35,49 @@ ckks_build::ckks_build(string mode, int alpha, int n, int d, int big_moduli, int
     encoder = make_unique<CKKSEncoder>(*context);
 
     //debug - calculate scale factors
-    if(mode == "debug2")
+    if(mode == "debug_scale")
         calscales();
+}
+
+/*  
+    make modulus chain. 
+    Mode1: big moduli at front/end, small moduli fill rest. 
+    Total size: iter+2.
+*/
+void ckks_build::modulus_chain_mode1(int big_moduli, int small_moduli, int iter) 
+{
+    modulus.push_back(big_moduli);
+    for (int i = 0; i < iter; i++)
+        modulus.push_back(small_moduli);
+    modulus.push_back(big_moduli);
+}
+
+/*
+    make modulus chain.
+    Mode 2: big moduli placed iter1 times at front, and once at the end. Small moduli fill rest.
+    Total size : iter1 + iter2 + 1.
+*/
+void ckks_build::modulus_chain_mode2(int big_moduli, int small_moduli, int iter1, int iter2)
+{
+    for(int i=0; i<iter1; i++)
+        modulus.push_back(big_moduli);
+    for (int i = 0; i < iter2; i++)
+        modulus.push_back(small_moduli);
+    modulus.push_back(big_moduli);
 }
 
 //scale factor debug
 void ckks_build::calscales() 
 {
+    int d = 1;
     Ciphertext x = encrypt(1.0);
     Ciphertext temp = x;
     scales.push_back(x.scale());
     while (temp.coeff_modulus_size() != 1) {
         mult(temp, x);
         scales.push_back(temp.scale());
+        cout << "Level " << d << ":\t" << temp.scale() << endl;
+        d++;
     }
 }
 
@@ -163,21 +190,24 @@ void ckks_build::mult(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& result)
     eva->relinearize_inplace(result, rlk);
     eva->rescale_to_next_inplace(result);
 }
+
+//Multiply 2 ciphertexts.
 void ckks_build::mult(Ciphertext& ctxt1, Ciphertext& ctxt2)
 {
-    //modulus_equal(ctxt1, ctxt2);
     scale_equal(ctxt1, ctxt2);
     eva->multiply_inplace(ctxt1, ctxt2);
     eva->relinearize_inplace(ctxt1, rlk);
     eva->rescale_to_next_inplace(ctxt1);
 }
+
+//Multiply plaintext / ciphertext. two data's scale, modulus_level should be equal.
 void ckks_build::mult(Plaintext& ptxt, Ciphertext& ctxt)
 {
-    //modulus_switch(ptxt, ctxt.parms_id());
-    scale_equal(ptxt, ctxt);
     eva->multiply_plain_inplace(ctxt, ptxt);
     eva->rescale_to_next_inplace(ctxt);
 }
+
+//square ciphertext.
 void ckks_build::square(Ciphertext& ctxt)
 {
     eva->square_inplace(ctxt);
@@ -191,14 +221,11 @@ Ciphertext ckks_build::exp(const Ciphertext& x, int d)
     result = encrypt(1.0);
 
     squareX = x;
-    while(true) {
+    while(d > 0) {
         if (d % 2) {
             mult(result, squareX);
         }
-        if (d > 0) {
-            square(squareX);
-        }
-        else break;
+        square(squareX);
         d /= 2;
     }
     return result;
@@ -253,4 +280,28 @@ void ckks_build::scale_equal(Plaintext& ptxt, Ciphertext& ctxt)
     enc->encrypt(ptxt, x);
     scale_equal(x, ctxt);
     dec->decrypt(x, ptxt);
+}
+
+/*#############################################################*/
+//for testing double scale.
+
+//multiply plaintext / ciphertext. multiply encoded 1.0 to rescale.
+void ckks_build::mul_plain(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination)
+{
+    Plaintext temp = encode(1.0, ctxt);
+    eva->multiply_plain(ctxt, ptxt, destination);
+    eva->multiply_plain(destination, temp, destination);
+    eva->rescale_to_next_inplace(destination);
+}
+//multiply 3 ciphertexts.
+void ckks_build::mul_cipher(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& ctxt3, Ciphertext& destination)
+{
+    eva->multiply(ctxt1, ctxt2, destination);
+    eva->multiply(destination, ctxt3, destination);
+    eva->rescale_to_next_inplace(destination);
+}
+
+void ckks_build::add_cipher(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& destination)
+{
+    eva->add(ctxt1, ctxt2, destination);
 }

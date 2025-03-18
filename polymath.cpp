@@ -1,9 +1,9 @@
 #include "header/SEAL_VS.h"
 
 // 팩토리얼
-int factorial(int a) {
+int factorial(int a, int b) {
     int res = 1;
-    for(int i=a; i>0; i--)
+    for(int i=a; i>b; i--)
         res *= i;
     return res;
 }
@@ -11,6 +11,25 @@ int factorial(int a) {
 //밑이 2인 로그
 double log2(double x, double base) {
     return log(x)/log(base);
+}
+
+/*
+    sample data in [min, -epsilon] U [epsilon, max]
+    repeat iter times.
+*/
+vector<double> sample_data(double min, double max, double epsilon,  int iter)
+{
+    vector<double> samples;
+    samples.reserve(iter);
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<double> dist1(-1.0, -epsilon);
+    uniform_real_distribution<double> dist2(epsilon, 1.0);
+    for (int i = 0; i < iter; i++) {
+        double sample = (rand() % 2 == 0) ? dist1(gen) : dist2(gen);
+        samples.push_back(sample);
+    }
+    return samples;
 }
 
 //특정 값을 size만큼 복제한 벡터 생성
