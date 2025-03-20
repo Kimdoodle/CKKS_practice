@@ -126,65 +126,97 @@
 //	return 0;
 //}
 
-//test double Scale
+// Double Scale
 int main()
 {
 	// param settings
 	string mode = "d";
 	int num = 5; // samples
-	int n = 1; // f_n
-	int alpha = 8;
+	int n = 1;
+	int nf = 3; // f_n
+	int ng = 5; // g_n
+	int alpha = 5;
 	double epsilon = pow(2.0, -alpha);
 	int big_moduli = 60;
 	int small_moduli = 40;
 	double scale = pow(2.0, small_moduli / 2);
 	size_t pmd = 32768;
-	int depth = 3;
+	int depth =17;
+	// 120+21=141/3=47     59 41 41
+	ckks_build ckks = ckks_build(mode, nf, depth, big_moduli, small_moduli, scale, pmd);
 
-	ckks_build ckks = ckks_build(mode, n, depth, big_moduli, small_moduli, scale, pmd);
-
-	//Sample data in [-1, -e] U [e, 1].
+	// Sample data in [-1, -e] U [e, 1].
 	vector<double> raw_inputs = sample_data(-1.0, 1.0, epsilon, num);
 	cout << "sampled x\n\t";
 	printVector(raw_inputs, false, 6);
 	cout << "---" << endl;
 
-	vector<double> realValue;
-	realValue.resize(raw_inputs.size());
-	Ciphertext result;
 	Ciphertext x = ckks.encrypt(raw_inputs);
 
-	//x = input samples, c = 1.0
-	Plaintext c = ckks.encode(1.0);
-	Ciphertext term0, term1, term2;
+	// compute f_n coeffs.
+	vector<double> polyF = computeF(n);
+	vector<double> polyG = { 0, 2126 / pow(2.0, 10), 0,  -1359 / pow(2.0, 10) }; //g_1
+	cout << "f_" << n << ":\t";
+	printVector(polyF, true);
+	cout << "g_1" << ":\t";
+	printVector(polyG, true);
+	cout << "---" << endl;
+	
 
-	//evaluate (c^2)x
-	ckks.mul_plain(c, x, term0);  // s , L-1
-	c = ckks.encode(1.0, term0);
-	ckks.mul_plain(c, term0, term0);  // s, L-2
+	vector<double> realValue = raw_inputs;
+	vector<double> fnDec;
+	// evaluate
+	Ciphertext y = x;
+	cout << "Remaining Levels: " << y.coeff_modulus_size() << endl;
+	// g_1^ng
+	for (int i = 1; i <= ng; i++) {
+		ckks.temp_d3_doubleScale(polyG, y, y);
+		realValue = polypolyEvaluate(polyG, realValue);
 
-	auto result_vec1 = ckks.decode_ctxt(term0);
-	result_vec1.resize(raw_inputs.size());
-	cout << "1.0x\ndecryption result:\t";
-	printVector(result_vec1, false, 6);
+		fnDec = ckks.decode_ctxt(y);
+		fnDec.resize(raw_inputs.size());
+		cout << "g^" << i << " 실제 계산값:\n\t";
+		printVector(realValue, false);
+		cout << "g^" << i << " 복호화값:\n\t";
+		printVector(fnDec, false);
+		cout << "Remaining Levels: " << y.coeff_modulus_size() << endl;
+		cout << "---" << endl;
+	}
 
-	//evaluate x^3
-	ckks.mul_cipher(x, x, x, term1); // s, L-1
-	c = ckks.encode(1.0, term1);
-	ckks.mul_plain(c, term1, term1); // s, L-2
+	// f_1^nf
+	for (int i = 1; i <= nf; i++) {
+		ckks.temp_d3_doubleScale(polyF, y, y);
+		realValue = polypolyEvaluate(polyF, realValue);
 
-	auto result_vec2 = ckks.decode_ctxt(term1);
-	result_vec2.resize(raw_inputs.size());
-	cout << "x^3\ndecryption result:\t";
-	printVector(result_vec2, false, 6);
-
-	//evaluate 1.0x + x^3
-	ckks.add_cipher(term0, term1, term2);
-
-	auto result_vec3 = ckks.decode_ctxt(term1);
-	result_vec3.resize(raw_inputs.size());
-	cout << "1.0x+x^3\ndecryption result:\t";
-	printVector(result_vec3, false, 6);
+		fnDec = ckks.decode_ctxt(y);
+		fnDec.resize(raw_inputs.size());
+		cout << "f^"<<i<<" 실제 계산값:\n\t";
+		printVector(realValue, false);
+		cout << "f^" << i << " 복호화값:\n\t";
+		printVector(fnDec, false);
+		cout << "Remaining Levels: " << y.coeff_modulus_size() << endl;
+		cout << "---" << endl;
+	}
+	
+	//// g_1 = ax + bx^3
+	//coeff = ckks.encode(polyF[1], x);
+	//Ciphertext term0, term1, result;
+	//ckks.mul_plain_double(coeff, x, term0); // ax
+	//coeff = ckks.encode(polyF[3], x);
+	//ckks.mul_plain_double(coeff, x, term1);
+	//ckks.mul_cipher_double(term1, x, x, term1); //bx^3
+	//ckks.add_cipher(term0, term1, result); // ax + bx^3
 
 	return 0;
 }
+
+//int main() {
+//	int n = 1;
+//	double tau = 1 / pow(2.0, 2);
+//	double pre = pow(2.0, -10);
+//	double a = pow(2.0, -8);
+//	double b = 1;
+//	
+//	vector<double> result = computeG(n, tau, pre, a, b);
+//	printVector(result, true, 6);
+//}

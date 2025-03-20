@@ -50,14 +50,18 @@ public:
     void mult(Plaintext& ptxt, Ciphertext& ctxt);
     void square(Ciphertext& ctxt);
 
-    void mul_plain(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination);
-    void mul_cipher(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& ctxt3, Ciphertext& destination);
-    void add_cipher(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& destination);
-
     Ciphertext exp(const Ciphertext& x, int d);
     void modulus_equal(Ciphertext& ctxt1, Ciphertext& ctxt2);
     void scale_equal(Ciphertext& ctxt1, Ciphertext& ctxt2);
     void scale_equal(Plaintext& ptxt, Ciphertext& ctxt);
+
+    void mul_plain_double(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination);
+    void mul_cipher_double(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& ctxt3, Ciphertext& destination);
+    void add_cipher(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& destination);
+    void temp_d3_doubleScale(vector<double>& poly, Ciphertext& x, Ciphertext& destination);
+
+    void mul_plain_triple(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination);
+    void mul_cipher_triple(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& ctxt3, Ciphertext& destination);
 };
 
 #endif // CKKS_CLASS_H

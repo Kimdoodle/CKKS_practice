@@ -10,7 +10,7 @@ ckks_build::ckks_build(string mode, int n, int d, int big_moduli, int small_modu
     parms->set_poly_modulus_degree(pmd);
     
     //modulus_chain_mode1(big_moduli, small_moduli, d);
-    modulus_chain_mode2(big_moduli, small_moduli, 2, 3);
+    modulus_chain_mode2(big_moduli, small_moduli, 0, d);
 
     //check MaxBitCount
     int r = 0;
@@ -59,6 +59,10 @@ void ckks_build::modulus_chain_mode1(int big_moduli, int small_moduli, int iter)
 */
 void ckks_build::modulus_chain_mode2(int big_moduli, int small_moduli, int iter1, int iter2)
 {
+    //for debug
+    modulus.push_back(59);
+    modulus.push_back(41);
+    modulus.push_back(41);
     for(int i=0; i<iter1; i++)
         modulus.push_back(big_moduli);
     for (int i = 0; i < iter2; i++)
@@ -282,11 +286,10 @@ void ckks_build::scale_equal(Plaintext& ptxt, Ciphertext& ctxt)
     dec->decrypt(x, ptxt);
 }
 
-/*#############################################################*/
-//for testing double scale.
+/*################ Double Scale Test ################################*/
 
 //multiply plaintext / ciphertext. multiply encoded 1.0 to rescale.
-void ckks_build::mul_plain(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination)
+void ckks_build::mul_plain_double(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination)
 {
     Plaintext temp = encode(1.0, ctxt);
     eva->multiply_plain(ctxt, ptxt, destination);
@@ -294,7 +297,7 @@ void ckks_build::mul_plain(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destin
     eva->rescale_to_next_inplace(destination);
 }
 //multiply 3 ciphertexts.
-void ckks_build::mul_cipher(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& ctxt3, Ciphertext& destination)
+void ckks_build::mul_cipher_double(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& ctxt3, Ciphertext& destination)
 {
     eva->multiply(ctxt1, ctxt2, destination);
     eva->relinearize_inplace(destination, rlk);
@@ -306,4 +309,43 @@ void ckks_build::mul_cipher(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& ct
 void ckks_build::add_cipher(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& destination)
 {
     eva->add(ctxt1, ctxt2, destination);
+}
+
+void ckks_build::temp_d3_doubleScale(vector<double>& poly, Ciphertext& x, Ciphertext& destination)
+{
+    Plaintext coeff = encode(poly[1], x);
+    Plaintext dummy;
+    Ciphertext term0, term1;
+
+    mul_plain_double(coeff, x, term0); // ax
+    dummy = encode(1.0, term0);
+    mul_plain_double(dummy, term0, term0);
+
+    mul_cipher_double(x, x, x, term1); //x^3
+    coeff = encode(poly[3], term1);
+    mul_plain_double(coeff, term1, term1); // bx^3
+
+    add_cipher(term0, term1, destination); // ax + bx^3
+}
+
+/*################ Triple Scale Test ################################*/
+
+//multiply plaintext / ciphertext. multiply encoded 1.0 'twice' to rescale.
+void ckks_build::mul_plain_triple(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination)
+{
+    Plaintext temp = encode(1.0, ctxt);
+    eva->multiply_plain(ctxt, ptxt, destination);
+    eva->multiply_plain(destination, temp, destination);
+    eva->multiply_plain(ctxt, ptxt, destination);
+    eva->multiply_plain(destination, temp, destination);
+    eva->rescale_to_next_inplace(destination);
+}
+//multiply 3 ciphertexts.
+void ckks_build::mul_cipher_triple(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& ctxt3, Ciphertext& destination)
+{
+    eva->multiply(ctxt1, ctxt2, destination);
+    eva->relinearize_inplace(destination, rlk);
+    eva->multiply(destination, ctxt3, destination);
+    eva->relinearize_inplace(destination, rlk);
+    eva->rescale_to_next_inplace(destination);
 }

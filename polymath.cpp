@@ -13,6 +13,16 @@ double log2(double x, double base) {
     return log(x)/log(base);
 }
 
+// 미분
+vector<double> differentiate(vector<double> poly)
+{
+    vector<double> result;
+    for (int i = 1; i < poly.size(); i++) {
+        result.push_back(poly[i] * i);
+    }
+    return result;
+}
+
 /*
     sample data in [min, -epsilon] U [epsilon, max]
     repeat iter times.
@@ -38,6 +48,15 @@ vector<double> duplicate_vector(double input, int size)
     vector<double> res;
     for (int i = 0; i < size; i++) res.push_back(input);
     return res;
+}
+
+//벡터의 모든 요소에 plain 곱셈
+vector<double> multPlainPolynomial(vector<double>& v, double scalar)
+{
+    vector<double> result(v.size());
+    for (int i = 0; i < v.size(); i++)
+        result[i] = scalar * v[i];
+    return result;
 }
 
 /*
@@ -120,6 +139,36 @@ vector<double> polypolyEvaluate(const vector<double>& poly, vector<double>& inpu
     result.resize(input.size());
     for (int i = 0; i < input.size(); i++) {
         result[i] = polyEvaluate(poly, input[i]);
+    }
+    return result;
+}
+
+// (x,y)점들로 다항식을 계산하는 함수(라그랑주 다항식)
+vector<double> calculatePoly(const vector<double>& x, const vector<double>& y) {
+    int n = x.size();
+    vector<double> result(n, 0.0);
+
+    for (int i = 0; i < n; i++) {
+        double xi = x[i];
+        double yi = y[i];
+
+        vector<double> term = { 1.0 }; // L_i(x) = 1 초기화
+        double denominator = 1.0;
+
+        for (int j = 0; j < n; ++j) {
+            if (i == j) continue;
+            double xj = x[j];
+            vector<double> poly_term = { -xj, 1.0 }; // (x - x_j)
+            term = multPolynomial(term, poly_term);
+            denominator *= (xi - xj);
+        }
+
+        term = multPlainPolynomial(term, yi / denominator); // y_i / L_i(xi)
+
+        // 결과 다항식에 더하기
+        for (int k = 0; k < term.size(); ++k) {
+            result[k] += term[k];
+        }
     }
     return result;
 }
