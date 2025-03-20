@@ -1,7 +1,7 @@
 #include "header/SEAL_VS.h"
 
 //Generator
-ckks_build::ckks_build(string mode, int n, int d, int big_moduli, int small_moduli, double scale, size_t pmd)
+ckks_build::ckks_build(string mode, string scaleMode, int n, int d, int big_moduli, int small_moduli, double scale, size_t pmd)
 {
     this->mode = mode;
     this->scale = scale;
@@ -9,8 +9,18 @@ ckks_build::ckks_build(string mode, int n, int d, int big_moduli, int small_modu
     parms = make_unique<EncryptionParameters>(scheme_type::ckks);
     parms->set_poly_modulus_degree(pmd);
     
-    //modulus_chain_mode1(big_moduli, small_moduli, d);
-    modulus_chain_mode2(big_moduli, small_moduli, 0, d);
+
+    if (scaleMode == "single") {    //single Scale
+        modulus_chain_mode1(big_moduli, small_moduli, d);
+    }
+    else if (scaleMode == "double") {    //double Scale
+        modulus = { 59, 41, 41 };
+        modulus_chain_mode3(big_moduli, small_moduli, d);
+    }
+    else if (scaleMode == "triple") {    //triple Scale
+        //modulus = { 60, 60, 60, 47 };
+        modulus_chain_mode2(big_moduli, small_moduli, 2, d);
+    }
 
     //check MaxBitCount
     int r = 0;
@@ -59,13 +69,20 @@ void ckks_build::modulus_chain_mode1(int big_moduli, int small_moduli, int iter)
 */
 void ckks_build::modulus_chain_mode2(int big_moduli, int small_moduli, int iter1, int iter2)
 {
-    //for debug
-    modulus.push_back(59);
-    modulus.push_back(41);
-    modulus.push_back(41);
     for(int i=0; i<iter1; i++)
         modulus.push_back(big_moduli);
     for (int i = 0; i < iter2; i++)
+        modulus.push_back(small_moduli);
+    modulus.push_back(big_moduli);
+}
+
+/*
+    make modulus chain.
+    Mode 3: base modulus already set. push small_moduli iter times, big_moduli at the end.
+*/
+void ckks_build::modulus_chain_mode3(int big_moduli, int small_moduli, int iter1)
+{
+    for (int i = 0; i < iter1; i++)
         modulus.push_back(small_moduli);
     modulus.push_back(big_moduli);
 }
@@ -328,24 +345,29 @@ void ckks_build::temp_d3_doubleScale(vector<double>& poly, Ciphertext& x, Cipher
     add_cipher(term0, term1, destination); // ax + bx^3
 }
 
-/*################ Triple Scale Test ################################*/
+void ckks_build::temp_d3_tripleScale(vector<double>& poly, Ciphertext& x, Ciphertext& destination)
+{
+    Plaintext coeff;
+    Plaintext dummy;
+    Ciphertext term0, term1;
 
-//multiply plaintext / ciphertext. multiply encoded 1.0 'twice' to rescale.
-void ckks_build::mul_plain_triple(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination)
-{
-    Plaintext temp = encode(1.0, ctxt);
-    eva->multiply_plain(ctxt, ptxt, destination);
-    eva->multiply_plain(destination, temp, destination);
-    eva->multiply_plain(ctxt, ptxt, destination);
-    eva->multiply_plain(destination, temp, destination);
-    eva->rescale_to_next_inplace(destination);
-}
-//multiply 3 ciphertexts.
-void ckks_build::mul_cipher_triple(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& ctxt3, Ciphertext& destination)
-{
-    eva->multiply(ctxt1, ctxt2, destination);
-    eva->relinearize_inplace(destination, rlk);
-    eva->multiply(destination, ctxt3, destination);
-    eva->relinearize_inplace(destination, rlk);
-    eva->rescale_to_next_inplace(destination);
+    //ax
+    coeff = encode(poly[1], x);
+    dummy = encode(1.0, x);
+    eva->multiply_plain(x, coeff, term0); //1
+    eva->multiply_plain(term0, dummy, term0); //2
+    eva->multiply_plain(term0, dummy, term0); //3
+    eva->rescale_to_next_inplace(term0); // rescale(L-1)
+
+    //bx^3
+    coeff = encode(poly[3], x);
+    eva->multiply(x, x, term1); //1
+    eva->relinearize_inplace(term1, rlk);
+    eva->multiply(x, term1, term1);//2
+    eva->relinearize_inplace(term1, rlk);
+    eva->multiply_plain(term1, coeff, term1);//3
+    eva->rescale_to_next_inplace(term1);// rescale(L-1)
+
+    //ax + bx^3
+    eva->add(term0, term1, destination);
 }

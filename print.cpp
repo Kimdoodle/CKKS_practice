@@ -61,16 +61,13 @@ void printStep(Ciphertext& y, vector<double>& real_result, vector<double>& poly,
 }
 
 /*
-    print decryption result and real evaluation result.
+    print Error.
 */
-void printResult(Ciphertext& y, vector<double>& real_result, int size, ckks_build& ckks, int pre)
+void printResult(vector<double>& dec_result, vector<double>& real_result, int pre)
 {
-    //decryption result
-    cout << "\tdecrypt value\n\t";
-    vector<double> result = ckks.decode_ctxt(y);
-    result.resize(size);
-    printVector(result, false, pre);
-    //real result
-    cout << "\treal value\n\t";
-    printVector(real_result, false, pre);
+    cout << "Difference:\n\t";
+    vector<double> error(dec_result.size());
+    for (int i = 0; i < dec_result.size(); i++)
+        error[i] = abs(dec_result[i] - real_result[i]);
+    printVector(error, false, 6);
 }

@@ -23,9 +23,10 @@ private:
     vector<double> scales;
 
 public:
-    ckks_build(string mode, int n, int d, int big_moduli, int small_moduli, double scale, size_t pmd);
+    ckks_build(string mode, string scaleMode, int n, int d, int big_moduli, int small_moduli, double scale, size_t pmd);
     void modulus_chain_mode1(int big_moduli, int small_moduli, int iter);
     void modulus_chain_mode2(int big_moduli, int small_moduli, int iter1, int iter2);
+    void modulus_chain_mode3(int big_moduli, int small_moduli, int iter1);
     void calscales();
 
     Plaintext encode(double input);
@@ -59,9 +60,7 @@ public:
     void mul_cipher_double(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& ctxt3, Ciphertext& destination);
     void add_cipher(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& destination);
     void temp_d3_doubleScale(vector<double>& poly, Ciphertext& x, Ciphertext& destination);
-
-    void mul_plain_triple(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination);
-    void mul_cipher_triple(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& ctxt3, Ciphertext& destination);
+    void temp_d3_tripleScale(vector<double>& poly, Ciphertext& x, Ciphertext& destination);
 };
 
 #endif // CKKS_CLASS_H
