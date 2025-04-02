@@ -358,6 +358,10 @@ void ckks_build::temp_d3_tripleScale(vector<double>& poly, Ciphertext& x, Cipher
     eva->multiply_plain(term0, dummy, term0); //2
     eva->multiply_plain(term0, dummy, term0); //3
     eva->rescale_to_next_inplace(term0); // rescale(L-1)
+    vector<double> ax = decode_ctxt(term0);
+    ax.resize(poly.size());
+    printf("ax\n");
+    printVector(ax, false, 6);
 
     //bx^3
     coeff = encode(poly[3], x);
@@ -367,6 +371,10 @@ void ckks_build::temp_d3_tripleScale(vector<double>& poly, Ciphertext& x, Cipher
     eva->relinearize_inplace(term1, rlk);
     eva->multiply_plain(term1, coeff, term1);//3
     eva->rescale_to_next_inplace(term1);// rescale(L-1)
+    vector<double> bx = decode_ctxt(term1);
+    bx.resize(poly.size());
+    printf("bx^3\n");
+    printVector(bx, false, 6);
 
     //ax + bx^3
     eva->add(term0, term1, destination);

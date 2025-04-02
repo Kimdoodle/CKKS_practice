@@ -5,7 +5,7 @@ void printVector(vector<double>& coeffs, bool asFunction, int pre) {
     cout << fixed << setprecision(pre);
     size_t size = coeffs.size();
     for (size_t i = 0; i < size; i++) {
-        if (coeffs[i] == 0.0) continue;
+        //if (coeffs[i] == 0.0) continue;
 
         cout << coeffs[i];
 
@@ -57,7 +57,7 @@ void printStep(Ciphertext& y, vector<double>& real_result, vector<double>& poly,
     //Remaining Levels
     cout << "\tRemaining Level: " << y.coeff_modulus_size() << endl;
     real_result = polypolyEvaluate(poly, real_result);
-    printResult(y, real_result, size, ckks, pre);
+    //printResult(y, real_result, size, ckks, pre);
 }
 
 /*
