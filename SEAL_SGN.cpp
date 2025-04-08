@@ -1,15 +1,10 @@
 ﻿#include "header/SEAL_VS.h"
 
-
-
-
 int main()
 {
 	// param settings
-	string mode = "d";
 	int num = 5; // samples
 	int n = 1;
-	string scaleMode = "triple";
 	int nf = 5; // f_n
 	int ng = 5; // g_n
 	int alpha = 7;
@@ -19,7 +14,7 @@ int main()
 	int small_moduli = 60;
 	double scale = pow(2.0, 25);
 	int depth = 11;
-	ckks_build ckks = ckks_build(mode, scaleMode, n, depth, big_moduli, small_moduli, scale, pmd);
+	ckks_build ckks = ckks_build(n, depth, big_moduli, small_moduli, scale, pmd);
 
 	// Sample data in [-1, -e] U [e, 1].
 	vector<double> raw_inputs = sample_data(-1.0, 1.0, epsilon, num);
@@ -31,6 +26,7 @@ int main()
 
 	// compute f_n coeffs.
 	vector<double> polyF = computeF(n);
+	// use g_n based on: Cheon, Jung Hee, Dongwoo Kim, and Duhyeong Kim. "Efficient homomorphic comparison methods with optimal complexity."
 	vector<double> polyG = { 0, 2126 / pow(2.0, 10), 0,  -1359 / pow(2.0, 10) }; //g_1
 	cout << "f_" << n << ":\t";
 	printVector(polyF, true);
@@ -38,6 +34,7 @@ int main()
 	printVector(polyG, true);
 	cout << "---" << endl;
 
+	auto time1 = cur_time(); //start time
 
 	vector<double> realValue = raw_inputs;
 	vector<double> fnDec;
@@ -59,6 +56,8 @@ int main()
 		printStep(realValue, polyF, fnDec, raw_inputs, y, ckks, "f", i);
 	}
 
+	auto time2 = cur_time(); // end time
+	calculate_time(time1, time2);
 
 	return 0;
 }

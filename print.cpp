@@ -52,9 +52,9 @@ void printStep(vector<double>& realValue, vector<double>& poly, vector<double>& 
     realValue = polypolyEvaluate(poly, realValue);
     fnDec = ckks.decode_ctxt(y);
     fnDec.resize(raw_inputs.size());
-    cout << function << "^" << i << " 실제 계산값:\n\t";
+    cout << function << "^" << i << "\tActual Computation:\n\t";
     printVector(realValue, false, 6);
-    cout << function << "^" << i << " 복호화값:\n\t";
+    cout << function << "^" << i << "\tDecrypted Value:\n\t";
     printVector(fnDec, false, 6);
     cout << "Remaining Levels: " << y.coeff_modulus_size() << endl;
     cout << "Current Scale: " << y.scale() << endl;

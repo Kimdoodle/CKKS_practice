@@ -1,26 +1,15 @@
 #include "header/SEAL_VS.h"
 
 //Generator
-ckks_build::ckks_build(string mode, string scaleMode, int n, int d, int big_moduli, int small_moduli, double scale, size_t pmd)
+ckks_build::ckks_build(int n, int d, int big_moduli, int small_moduli, double scale, size_t pmd)
 {
-    this->mode = mode;
     this->scale = scale;
     
     parms = make_unique<EncryptionParameters>(scheme_type::ckks);
     parms->set_poly_modulus_degree(pmd);
     
-
-    if (scaleMode == "single") {    //single Scale
-        modulus_chain_mode1(big_moduli, small_moduli, d);
-    }
-    else if (scaleMode == "double") {    //double Scale
-        modulus = { 59, 41, 41 };
-        modulus_chain_mode3(big_moduli, small_moduli, d);
-    }
-    else if (scaleMode == "triple") {    //triple Scale
-        //modulus = { 60, 60, 60, 47 };
-        modulus_chain_mode2(big_moduli, small_moduli, 2, d);
-    }
+    // set modulus chain.
+     modulus_chain_mode2(big_moduli, small_moduli, 2, d);
 
     //check MaxBitCount
     int r = 0;
@@ -43,10 +32,6 @@ ckks_build::ckks_build(string mode, string scaleMode, int n, int d, int big_modu
     eva = make_unique<Evaluator>(*context);
     dec = make_unique<Decryptor>(*context, sk);
     encoder = make_unique<CKKSEncoder>(*context);
-
-    //debug - calculate scale factors
-    if(mode == "debug_scale")
-        calscales();
 }
 
 /*  
@@ -259,19 +244,19 @@ Ciphertext ckks_build::exp(const Ciphertext& x, int d)
     return result;
 }
 
-// 두 암호문의 modulus(level) 통일
-void ckks_build::modulus_equal(Ciphertext& ctxt1, Ciphertext& ctxt2)
-{
-    auto level1 = ctxt1.coeff_modulus_size();
-    auto level2 = ctxt2.coeff_modulus_size();
-
-    if (level1 < level2) {
-        modulus_switch(ctxt2, ctxt1.parms_id());
-    }
-    else if (level1 > level2) {
-        modulus_switch(ctxt1, ctxt2.parms_id());
-    }
-}
+//equal two ciphertext's modulus level.
+//void ckks_build::modulus_equal(Ciphertext& ctxt1, Ciphertext& ctxt2)
+//{
+//    auto level1 = ctxt1.coeff_modulus_size();
+//    auto level2 = ctxt2.coeff_modulus_size();
+//
+//    if (level1 < level2) {
+//        modulus_switch(ctxt2, ctxt1.parms_id());
+//    }
+//    else if (level1 > level2) {
+//        modulus_switch(ctxt1, ctxt2.parms_id());
+//    }
+//}
 
 //두 암호문의 scale 통일
 void ckks_build::scale_equal(Ciphertext& ctxt1, Ciphertext& ctxt2)
@@ -313,81 +298,81 @@ void ckks_build::scale_equal(Plaintext& ptxt, Ciphertext& ctxt)
 /*################ Double Scale Test ################################*/
 
 //multiply plaintext / ciphertext. multiply encoded 1.0 to rescale.
-void ckks_build::mul_plain_double(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination)
-{
-    Plaintext temp = encode(1.0, ctxt);
-    eva->multiply_plain(ctxt, ptxt, destination);
-    eva->multiply_plain(destination, temp, destination);
-    eva->rescale_to_next_inplace(destination);
-}
-//multiply 3 ciphertexts.
-void ckks_build::mul_cipher_double(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& ctxt3, Ciphertext& destination)
-{
-    eva->multiply(ctxt1, ctxt2, destination);
-    eva->relinearize_inplace(destination, rlk);
-    eva->multiply(destination, ctxt3, destination);
-    eva->relinearize_inplace(destination, rlk);
-    eva->rescale_to_next_inplace(destination);
-}
-
-void ckks_build::add_cipher(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& destination)
-{
-    eva->add(ctxt1, ctxt2, destination);
-}
-
-void ckks_build::temp_d3_doubleScale(vector<double>& poly, Ciphertext& x, Ciphertext& destination)
-{
-    Plaintext coeff = encode(poly[1], x);
-    Plaintext dummy;
-    Ciphertext term0, term1;
-
-    mul_plain_double(coeff, x, term0); // ax
-    dummy = encode(1.0, term0);
-    mul_plain_double(dummy, term0, term0);
-
-    mul_cipher_double(x, x, x, term1); //x^3
-    coeff = encode(poly[3], term1);
-    mul_plain_double(coeff, term1, term1); // bx^3
-
-    add_cipher(term0, term1, destination); // ax + bx^3
-}
-
-void ckks_build::evaluate_function_tripleScale(vector<double>& poly, Ciphertext& x, Ciphertext& destination)
-{
-    Plaintext coeff;
-    Plaintext dummy;
-    Ciphertext term0, term1;
-
-    //ax
-    coeff = encode(poly[1], x);
-    dummy = encode(1.0, x);
-    eva->multiply_plain(x, coeff, term0); //1
-    eva->multiply_plain(term0, dummy, term0); //2
-    eva->multiply_plain(term0, dummy, term0); //3
-    eva->rescale_to_next_inplace(term0); // rescale(L-1)
-
-    vector<double> ax = decode_ctxt(term0);
-    ax.resize(poly.size());
-    printf("ax\n");
-    printVector(ax, false, 6);
-
-    //bx^3
-    coeff = encode(poly[3], x);
-    eva->multiply(x, x, term1); //1
-    eva->relinearize_inplace(term1, rlk);
-    eva->multiply(x, term1, term1);//2
-    eva->relinearize_inplace(term1, rlk);
-    eva->multiply_plain(term1, coeff, term1);//3
-    eva->rescale_to_next_inplace(term1);// rescale(L-1)
-
-    vector<double> bx = decode_ctxt(term1);
-    bx.resize(poly.size());
-    printf("bx^3\n");
-    printVector(bx, false, 6);
-
-    //ax + bx^3
-    eva->add(term0, term1, destination);
-}
+//void ckks_build::mul_plain_double(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination)
+//{
+//    Plaintext temp = encode(1.0, ctxt);
+//    eva->multiply_plain(ctxt, ptxt, destination);
+//    eva->multiply_plain(destination, temp, destination);
+//    eva->rescale_to_next_inplace(destination);
+//}
+////multiply 3 ciphertexts.
+//void ckks_build::mul_cipher_double(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& ctxt3, Ciphertext& destination)
+//{
+//    eva->multiply(ctxt1, ctxt2, destination);
+//    eva->relinearize_inplace(destination, rlk);
+//    eva->multiply(destination, ctxt3, destination);
+//    eva->relinearize_inplace(destination, rlk);
+//    eva->rescale_to_next_inplace(destination);
+//}
+//
+//void ckks_build::add_cipher(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& destination)
+//{
+//    eva->add(ctxt1, ctxt2, destination);
+//}
+//
+//void ckks_build::temp_d3_doubleScale(vector<double>& poly, Ciphertext& x, Ciphertext& destination)
+//{
+//    Plaintext coeff = encode(poly[1], x);
+//    Plaintext dummy;
+//    Ciphertext term0, term1;
+//
+//    mul_plain_double(coeff, x, term0); // ax
+//    dummy = encode(1.0, term0);
+//    mul_plain_double(dummy, term0, term0);
+//
+//    mul_cipher_double(x, x, x, term1); //x^3
+//    coeff = encode(poly[3], term1);
+//    mul_plain_double(coeff, term1, term1); // bx^3
+//
+//    add_cipher(term0, term1, destination); // ax + bx^3
+//}
+//
+//void ckks_build::evaluate_function_tripleScale(vector<double>& poly, Ciphertext& x, Ciphertext& destination)
+//{
+//    Plaintext coeff;
+//    Plaintext dummy;
+//    Ciphertext term0, term1;
+//
+//    //ax
+//    coeff = encode(poly[1], x);
+//    dummy = encode(1.0, x);
+//    eva->multiply_plain(x, coeff, term0); //1
+//    eva->multiply_plain(term0, dummy, term0); //2
+//    eva->multiply_plain(term0, dummy, term0); //3
+//    eva->rescale_to_next_inplace(term0); // rescale(L-1)
+//
+//    vector<double> ax = decode_ctxt(term0);
+//    ax.resize(poly.size());
+//    printf("ax\n");
+//    printVector(ax, false, 6);
+//
+//    //bx^3
+//    coeff = encode(poly[3], x);
+//    eva->multiply(x, x, term1); //1
+//    eva->relinearize_inplace(term1, rlk);
+//    eva->multiply(x, term1, term1);//2
+//    eva->relinearize_inplace(term1, rlk);
+//    eva->multiply_plain(term1, coeff, term1);//3
+//    eva->rescale_to_next_inplace(term1);// rescale(L-1)
+//
+//    vector<double> bx = decode_ctxt(term1);
+//    bx.resize(poly.size());
+//    printf("bx^3\n");
+//    printVector(bx, false, 6);
+//
+//    //ax + bx^3
+//    eva->add(term0, term1, destination);
+//}
 
 void ckks_build::evaluate_function_tripleScale_v2(vector<double>& poly, Ciphertext& x, Ciphertext& destination)
 {
@@ -398,9 +383,23 @@ void ckks_build::evaluate_function_tripleScale_v2(vector<double>& poly, Cipherte
     int maxScale = 85;
     int curScale;
 
+    /*
+        1 rescaling after 3 multiplication.
+        Scale size = 2^25
+        modulus size = 60 bits
+        ex) ax
+            coeff a size = 1.0(scale) * 2^60
+            ciphertext x size = 2^25(scale)
+            a * x  size = 2^85
+
+        ex2) bx^3
+            coeff b size = 1.0(scale) * 2^10
+            ciphertext x^3 size = (2^25)^3 = 2^75(scale)
+            bx^3 size = 2^85(scale)
+    */
     //ax
-    double a = poly[1] * pow(2.0, 35);
-    coeff = encode(a, x);
+    double a = poly[1] * pow(2.0, 60); 
+    coeff = encode(a, x, 1.0);
     eva->multiply_plain(x, coeff, term0);
     term0.scale() = pow(2.0, maxScale);
     eva->rescale_to_next_inplace(term0); // rescale(L-1)
