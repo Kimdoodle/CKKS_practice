@@ -1,7 +1,7 @@
 #ifndef FUNCTION_SEAL_H
 #define FUNCTION_SEAL_H
 
-#include "SEAL_VS.h"
+#include "SEAL_MM.h"
 
 
 Ciphertext evaluate_function(vector<double>& poly, Ciphertext& x, int size, string scaleMode, ckks_build& ckks);

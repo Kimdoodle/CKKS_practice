@@ -1,7 +1,7 @@
 #ifndef POLYMATH_H
 #define POLYMATH_H
 
-#include "SEAL_VS.h"
+#include "SEAL_MM.h"
 
 int factorial(int a, int b=0);
 double log2(double x, double base);
@@ -17,5 +17,13 @@ double polyEvaluate(const vector<double>& poly, double input);
 double polypolyEvaluate(const vector<double>& poly, double input, int d);
 vector<double> polypolyEvaluate(const vector<double>& poly, vector<double>& input);
 vector<double> calculatePoly(const vector<double>& x, const vector<double>& y);
+
+vector<vector<double>> make_matrix(int size, const string& type);
+vector<vector<double>> pad_matrix(vector<vector<double>> U, int d);
+vector<vector<double>> ipad_matrix(vector<vector<double>> U, int d);
+vector<double> flatten_matrix(vector<vector<double>> U);
+vector<vector<double>> unflatten_matrix(vector<double> U, int colsize);
+vector<vector<double>> diagonal_matrix(vector<vector<double>> U);
+
 
 #endif // POLYMATH_H

@@ -1,7 +1,6 @@
-#ifndef CKKS_CLASS_H
-#define CKKS_CLASS_H
+#pragma once
 
-#include "SEAL_VS.h"
+#include "SEAL_MM.h"
 
 class ckks_build {
 private:
@@ -12,26 +11,24 @@ private:
     SecretKey sk;
     PublicKey pk;
     RelinKeys rlk;
+    GaloisKeys glk;
 
     unique_ptr<Encryptor> enc;
     unique_ptr<Evaluator> eva;
     unique_ptr<Decryptor> dec;
     unique_ptr<CKKSEncoder> encoder;
 
+    int poly_modulus_degree;
     double scale;
-    vector<double> scales;
 
 public:
-    ckks_build(int n, int d, int big_moduli, int small_moduli, double scale, size_t pmd);
-    void modulus_chain_mode1(int big_moduli, int small_moduli, int iter);
-    void modulus_chain_mode2(int big_moduli, int small_moduli, int iter1, int iter2);
-    void modulus_chain_mode3(int big_moduli, int small_moduli, int iter1);
-    void calscales();
+    ckks_build(double scale, size_t pmd);
 
     Plaintext encode(double input);
     Plaintext encode(const double& input, Ciphertext& ctxt);
     Plaintext encode(const double& input, Ciphertext& ctxt, double scale);
     Plaintext encode(const vector<double>& input);
+    Plaintext encode(const vector<double>& input, Ciphertext& ctxt);
     Ciphertext encrypt(const Plaintext& plain);
     Ciphertext encrypt(double input);
     Ciphertext encrypt(const double& input, Ciphertext& ctxt);
@@ -62,6 +59,13 @@ public:
     //void temp_d3_doubleScale(vector<double>& poly, Ciphertext& x, Ciphertext& destination);
     //void evaluate_function_tripleScale(vector<double>& poly, Ciphertext& x, Ciphertext& destination);
     void evaluate_function_tripleScale_v2(vector<double>& poly, Ciphertext& x, Ciphertext& destination);
-};
 
-#endif // CKKS_CLASS_H
+
+    //#######################################################
+    
+    vector<Plaintext> encode_matrix(vector<vector<double>> U, Ciphertext& x);
+    Ciphertext rotate(Ciphertext& x, int k);
+    Ciphertext linear_transform(Ciphertext& x, vector<Plaintext>& dVecs);
+    Ciphertext matrix_multiplication(Ciphertext& A, Ciphertext& B, int originalD);
+    void debug_printMatrix(Ciphertext& A, int originalD, string title);
+};

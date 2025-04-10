@@ -1,7 +1,7 @@
 #ifndef FUNCTION_PLAIN_H
 #define FUNCTION_PLAIN_H
 
-#include "SEAL_VS.h"
+#include "SEAL_MM.h"
 
 double calC(int n);
 vector<double> computeF(int n);

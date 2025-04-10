@@ -1,4 +1,4 @@
-#include "header/SEAL_VS.h"
+#include "header/SEAL_MM.h"
 
 // print vector elements. Choose vector is function's coeff or not.
 void printVector(vector<double>& coeffs, bool asFunction, int pre) {
@@ -20,6 +20,25 @@ void printVector(vector<double>& coeffs, bool asFunction, int pre) {
         }
     }
     cout << endl;
+}
+
+void printMatrix(vector<vector<double>> U, int rowsize)
+{
+    int colsize;
+    if (rowsize == 0) {
+        rowsize = colsize = U.size();
+    }
+    else {
+        colsize = U.size() / rowsize;
+    }
+    cout << fixed << setprecision(0);
+    for (int row = 0; row < rowsize; row++) {
+        for (int col = 0; col < colsize; col++) {
+            cout << abs(U[row][col]) << " ";
+        }
+        cout << endl;
+    }
+    cout << "\n----------" << endl;
 }
 
 void print_parameters(const SEALContext& context)

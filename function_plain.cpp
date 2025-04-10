@@ -1,4 +1,4 @@
-#include "header/SEAL_VS.h"
+#include "header/SEAL_MM.h"
 
 //c_n 계산
 double calC(int n) {

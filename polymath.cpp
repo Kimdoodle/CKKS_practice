@@ -1,4 +1,4 @@
-#include "header/SEAL_VS.h"
+#include "header/SEAL_MM.h"
 
 // 팩토리얼
 int factorial(int a, int b) {
@@ -170,5 +170,221 @@ vector<double> calculatePoly(const vector<double>& x, const vector<double>& y) {
             result[k] += term[k];
         }
     }
+    return result;
+}
+
+
+// 행렬 생성
+vector<vector<double>> make_matrix(int d, const string& type)
+{
+    int size = d*d;
+    vector<vector<double>> result(size, vector<double>(size, 0));
+
+    if (type == "sigma")
+    {
+        for (int i = 0; i < d; ++i)
+        {
+            for (int j = 0; j < d; ++j)
+            {
+                int row = d * i + j;
+                int col = d * i + (i + j) % d;
+                result[row][col] = 1;
+            }
+        }
+    }
+    else if (type == "tau")
+    {
+        for (int i = 0; i < d; ++i)
+        {
+            for (int j = 0; j < d; ++j)
+            {
+                int row = d * i + j;
+                int col = d * ((i + j) % d) + j;
+                result[row][col] = 1;
+            }
+        }
+    }
+    else if (type.rfind("phi", 0) == 0)
+    {
+        int k = 0;
+        if (type.length() > 3) k = stoi(type.substr(3));
+        for (int i = 0; i < d; ++i)
+        {
+            for (int j = 0; j < d; ++j)
+            {
+                int row = d * i + j;
+                int col = d * i + ((j + k) % d);
+                result[row][col] = 1;
+            }
+        }
+    }
+    else if (type.rfind("psi", 0) == 0)
+    {
+        int k = 0;
+        if (type.length() > 3) k = stoi(type.substr(3));
+        for (int i = 0; i < d; ++i)
+        {
+            for (int j = 0; j < d; ++j)
+            {
+                int row = d * i + j;
+                int col = d * ((i + k) % d) + j;
+                result[row][col] = 1;
+            }
+        }
+    }
+
+    return result;
+}
+
+// 행렬 U를 dxd행렬로 확장(0.0으로 채움)
+vector<vector<double>> pad_matrix(vector<vector<double>> U, int d)
+{
+    vector<vector<double>> pMatrix;
+    int rows = U.size();
+
+    // 실제 데이터 행 처리
+    for (const auto& row : U) {
+        vector<double> padded_row = row;
+        padded_row.resize(d, 0.0);
+        pMatrix.push_back(padded_row);
+    }
+
+    // 부족한 행을 0으로 padding
+    vector<double> zero_row(d, 0.0);
+    for (int i = rows; i < d; ++i) {
+        pMatrix.push_back(zero_row);
+    }
+
+    return pMatrix;
+}
+
+// 행렬 U의 padding을 제거 -> dxd 행렬로 변형
+vector<vector<double>> ipad_matrix(vector<vector<double>> U, int d)
+{
+    vector<vector<double>> nopad_U;
+    for (int i = 0; i < d; i++) {
+        vector<double> row;
+        for (int j = 0; j < d; j++) {
+            row.push_back(U[i][j]);
+        }
+        nopad_U.push_back(row);
+    }
+    return nopad_U;
+}
+
+//행렬 U를 (d^2)x1 벡터로 평탄화
+vector<double> flatten_matrix(vector<vector<double>> U)
+{
+    vector<double> flatMatrix;
+    for(vector<double> row: U)
+        flatMatrix.insert(flatMatrix.end(), row.begin(), row.end());
+    return flatMatrix;
+}
+
+//벡터를 dxd행렬로 다시 변형
+vector<vector<double>> unflatten_matrix(vector<double> U, int colsize)
+{
+    int rowsize = U.size() / colsize;
+    vector<vector<double>> matrix(rowsize, vector<double>(colsize, 0.0));
+
+    for (int i = 0; i < rowsize; i++) {
+        for (int j = 0; j < colsize; j++) {
+            matrix[i][j] = U[colsize * i + j];
+        }
+    }
+    return matrix;
+}
+
+// 행렬에 따른 대각벡터 생성
+vector<vector<double>> diagonal_matrix(vector<vector<double>> U)
+{
+    size_t n = U.size();
+    vector<vector<double>> dVecs;
+
+    for (size_t i = 0; i < n; ++i)
+    {
+        vector<double> dVec;
+        for (size_t j = 0; j < n; ++j)
+        {
+            dVec.push_back(U[j][(j + i) % n]);
+        }
+        dVecs.push_back(dVec);
+    }
+
+    return dVecs;
+}
+
+map<int, vector<double>> diagonal_vector(vector<vector<double>> U, string type)
+{
+    map<int, vector<double>> result;
+    size_t len = U.size() * U[0].size();
+    int d = static_cast<int>(sqrt(len));
+
+    // Flatten
+    vector<double> ct;
+    for (const auto& row : U)
+        ct.insert(ct.end(), row.begin(), row.end());
+
+    if (type == "sigma")
+    {
+        for (int k = -d + 1; k < 0; ++k)
+        {
+            vector<double> uk(len, 0);
+            for (int l = 0; l < len; ++l)
+            {
+                int cond = l - (d + k) * d;
+                if (-k <= cond && cond < d)
+                    uk[l] = 1;
+            }
+            result[k] = uk;
+        }
+        for (int k = 0; k < d; ++k)
+        {
+            vector<double> uk(len, 0);
+            for (int l = 0; l < len; ++l)
+            {
+                int cond = l - d * k;
+                if (0 <= cond && cond < (d - k))
+                    uk[l] = 1;
+            }
+            result[k] = uk;
+        }
+    }
+    else if (type == "tau")
+    {
+        for (int k = 0; k < d; ++k)
+        {
+            vector<double> uk(len, 0);
+            int l = 0;
+            while (k + d * l < static_cast<int>(len))
+            {
+                uk[k + d * l] = 1;
+                ++l;
+            }
+            result[d * k] = uk;
+        }
+    }
+    else if (type == "phi")
+    {
+        for (int variant = 0; variant < 2; ++variant)
+        {
+            vector<double> uk(len, 0);
+            for (int l = 0; l < static_cast<int>(len); ++l)
+            {
+                int mod = l % d;
+                if (variant == 0 && 0 <= mod && mod < (d))
+                    uk[l] = (mod < d) ? 1 : 0;
+                else if (variant == 1 && (d - 0) <= mod && mod < d)
+                    uk[l] = 1;
+            }
+            result[(variant == 0) ? 0 : -d] = uk;
+        }
+    }
+    else if (type == "psi")
+    {
+        vector<double> uk(len, 1);
+        result[0] = uk;
+    }
+
     return result;
 }

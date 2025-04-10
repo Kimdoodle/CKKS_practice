@@ -1,4 +1,4 @@
-#include "header/SEAL_VS.h"
+#include "header/SEAL_MM.h"
 
 //return current time.
 time_point<high_resolution_clock> cur_time()

@@ -1,23 +1,16 @@
-#include "header/SEAL_VS.h"
+#include "header/SEAL_MM.h"
 
 //Generator
-ckks_build::ckks_build(int n, int d, int big_moduli, int small_moduli, double scale, size_t pmd)
+ckks_build::ckks_build(double scale, size_t pmd)
 {
     this->scale = scale;
-    
+    this->poly_modulus_degree = pmd;
+
     parms = make_unique<EncryptionParameters>(scheme_type::ckks);
     parms->set_poly_modulus_degree(pmd);
     
     // set modulus chain.
-     modulus_chain_mode2(big_moduli, small_moduli, 2, d);
-
-    //check MaxBitCount
-    int r = 0;
-    for (int m : modulus) { r += m; }
-    if (CoeffModulus::MaxBitCount(pmd) < r) {
-        cout << "Error: Max Modulus Size " << CoeffModulus::MaxBitCount(pmd) << " < " << r << endl;
-        exit(0);
-    }
+    modulus = { 60, 60, 60 , 60 , 60 , 60 , 60 , 60 };
 
     parms->set_coeff_modulus(CoeffModulus::Create(pmd, modulus));
 
@@ -27,6 +20,7 @@ ckks_build::ckks_build(int n, int d, int big_moduli, int small_moduli, double sc
     sk = keygen->secret_key();
     keygen->create_public_key(pk);
     keygen->create_relin_keys(rlk);
+    keygen->create_galois_keys(std::vector<int32_t>{1}, glk);
 
     enc = make_unique<Encryptor>(*context, pk);
     eva = make_unique<Evaluator>(*context);
@@ -34,58 +28,6 @@ ckks_build::ckks_build(int n, int d, int big_moduli, int small_moduli, double sc
     encoder = make_unique<CKKSEncoder>(*context);
 }
 
-/*  
-    make modulus chain. 
-    Mode1: big moduli at front/end, small moduli fill rest. 
-    Total size: iter+2.
-*/
-void ckks_build::modulus_chain_mode1(int big_moduli, int small_moduli, int iter) 
-{
-    modulus.push_back(big_moduli);
-    for (int i = 0; i < iter; i++)
-        modulus.push_back(small_moduli);
-    modulus.push_back(big_moduli);
-}
-
-/*
-    make modulus chain.
-    Mode 2: big moduli placed iter1 times at front, and once at the end. Small moduli fill rest.
-    Total size : iter1 + iter2 + 1.
-*/
-void ckks_build::modulus_chain_mode2(int big_moduli, int small_moduli, int iter1, int iter2)
-{
-    for(int i=0; i<iter1; i++)
-        modulus.push_back(big_moduli);
-    for (int i = 0; i < iter2; i++)
-        modulus.push_back(small_moduli);
-    modulus.push_back(big_moduli);
-}
-
-/*
-    make modulus chain.
-    Mode 3: base modulus already set. push small_moduli iter times, big_moduli at the end.
-*/
-void ckks_build::modulus_chain_mode3(int big_moduli, int small_moduli, int iter1)
-{
-    for (int i = 0; i < iter1; i++)
-        modulus.push_back(small_moduli);
-    modulus.push_back(big_moduli);
-}
-
-//scale factor debug
-void ckks_build::calscales() 
-{
-    int d = 1;
-    Ciphertext x = encrypt(1.0);
-    Ciphertext temp = x;
-    scales.push_back(x.scale());
-    while (temp.coeff_modulus_size() != 1) {
-        mult(temp, x);
-        scales.push_back(temp.scale());
-        cout << "Level " << d << ":\t" << temp.scale() << endl;
-        d++;
-    }
-}
 
 // encode coeff. Only 1 value needed.
 Plaintext ckks_build::encode(double input)
@@ -114,6 +56,13 @@ Plaintext ckks_build::encode(const vector<double>& input)
 {
     Plaintext plain;
     encoder->encode(input, scale, plain);
+    return plain;
+}
+
+Plaintext ckks_build::encode(const vector<double>& input, Ciphertext& ctxt)
+{
+    Plaintext plain;
+    encoder->encode(input, ctxt.scale(), plain);
     return plain;
 }
 
@@ -418,4 +367,110 @@ void ckks_build::evaluate_function_tripleScale_v2(vector<double>& poly, Cipherte
 
     //ax + bx^3
     eva->add(term0, term1, destination);
+}
+
+/* ######################################################## */
+
+vector<Plaintext> ckks_build::encode_matrix(vector<vector<double>> U, Ciphertext& x)
+{
+    vector<Plaintext> temp;
+    for (vector<double> row : U)
+    {
+        temp.push_back(encode(row, x));
+    }
+    return temp;
+}
+
+Ciphertext ckks_build::rotate(Ciphertext &x, int k)
+{
+    Ciphertext res;
+    eva->rotate_vector(x, k, glk, res);
+    return res;
+}
+
+
+Ciphertext ckks_build::linear_transform(Ciphertext& x, vector<Plaintext>& dVecs)
+{
+    Ciphertext ctprime, temp;
+    Ciphertext tempx = x;
+    eva->multiply_plain(x, dVecs[0], ctprime);
+    eva->relinearize_inplace(ctprime, rlk);
+
+    for (int i = 1; i < dVecs.size(); i++) {
+        //tempx = rotate(tempx, 1);
+        debug_printMatrix(x, 9, "tempx" + to_string(i));
+        eva->multiply_plain(x, dVecs[i], temp);
+        eva->relinearize_inplace(x, rlk);
+        eva->add(temp, ctprime, ctprime);
+    }
+    return ctprime;
+}
+
+Ciphertext ckks_build::matrix_multiplication(Ciphertext& A, Ciphertext& B, int originalD)
+{
+    vector<vector<double>> matrix, d_matrix, pad_d_matrix;
+    vector<Plaintext> encoded_matrix;
+    int sizeU = int(sqrt(poly_modulus_degree / 2));
+
+    // Step 1-1
+    matrix = make_matrix(originalD, "sigma");
+    d_matrix = diagonal_matrix(matrix);
+    pad_d_matrix = pad_matrix(d_matrix, sizeU);
+    encoded_matrix = encode_matrix(pad_d_matrix, A);
+    Ciphertext ctA0 = linear_transform(A, encoded_matrix); // scale+1
+    eva->relinearize_inplace(ctA0, rlk);
+    eva->rescale_to_next_inplace(ctA0);
+    debug_printMatrix(ctA0, originalD, "ctA0");
+
+    //Step 1-2
+    matrix = make_matrix(originalD, "tau");
+    d_matrix = diagonal_matrix(matrix);
+    encoded_matrix = encode_matrix(d_matrix, B);
+    Ciphertext ctB0 = linear_transform(A, encoded_matrix); // scale+1
+    eva->relinearize_inplace(ctB0, rlk);
+    eva->rescale_to_next_inplace(ctB0);
+    debug_printMatrix(ctB0, originalD, "ctB0");
+
+    //Step 2
+    vector<Ciphertext> ctAk_vector = { ctA0 };
+    vector<Ciphertext> ctBk_vector = { ctB0 };
+    Ciphertext ctAk, ctBk;
+    for (int k = 1; k < originalD; k++)
+    {
+        matrix = make_matrix(originalD, "phi" + to_string(k));
+        d_matrix = diagonal_matrix(matrix);
+        encoded_matrix = encode_matrix(d_matrix, A);
+        ctAk = linear_transform(A, encoded_matrix);
+        eva->relinearize_inplace(ctAk, rlk);
+        eva->rescale_to_next_inplace(ctAk);
+        ctAk_vector.push_back(ctAk);
+
+        matrix = make_matrix(originalD, "psi" + to_string(k));
+        d_matrix = diagonal_matrix(matrix);
+        encoded_matrix = encode_matrix(d_matrix, B);
+        ctBk = linear_transform(B, encoded_matrix);
+        eva->relinearize_inplace(ctBk, rlk);
+        eva->rescale_to_next_inplace(ctBk);
+        ctBk_vector.push_back(ctBk);
+    }
+    
+    //Step3
+    Ciphertext ctAB, temp;
+    mult(ctA0, ctB0, ctAB);
+    
+    for (int k = 1; k < originalD; k++)
+    {
+        mult(ctAk_vector[k], ctBk_vector[k], temp);
+        add(ctAB, temp, ctAB);
+    }
+    return ctAB;
+}
+
+void ckks_build::debug_printMatrix(Ciphertext& A, int originalD, string title)
+{
+    vector<double> decA = decode_ctxt(A);
+    vector<vector<double>> unflat_decA = unflatten_matrix(decA, int(sqrt(decA.size())));
+    vector<vector<double>> final_decA = ipad_matrix(unflat_decA, int(sqrt(decA.size())));
+    cout << title << endl;
+    printMatrix(final_decA);
 }

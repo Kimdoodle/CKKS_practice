@@ -5,7 +5,7 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
-set(PROJECT_NAME "SEAL_SGN")
+set(PROJECT_NAME "SEAL_MM")
     project(${PROJECT_NAME})
 
 set(CMAKE_CXX_STANDARD 17)
@@ -15,7 +15,7 @@ file(GLOB SOURCES "*.cpp")
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET SEAL_SGN PROPERTY CXX_STANDARD 20)
+  set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 endif()
 
 

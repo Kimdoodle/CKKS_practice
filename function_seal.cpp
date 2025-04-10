@@ -1,4 +1,4 @@
-#include "header/SEAL_VS.h"
+#include "header/SEAL_MM.h"
 
 //evaluate function
 Ciphertext evaluate_function(vector<double>& poly, Ciphertext& x, int size, string scaleMode, ckks_build& ckks)
