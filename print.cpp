@@ -5,9 +5,8 @@ void printVector(vector<double>& coeffs, bool asFunction, int pre) {
     cout << fixed << setprecision(pre);
     size_t size = coeffs.size();
     for (size_t i = 0; i < size; i++) {
-        //if (coeffs[i] == 0.0) continue;
-
-        cout << coeffs[i];
+        double val = (abs(coeffs[i]) < 1e-12) ? 0.0 : coeffs[i];
+        cout << val;
 
         if (asFunction) {
             cout << "(x" << i << ")";

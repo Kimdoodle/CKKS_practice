@@ -24,6 +24,8 @@ private:
 public:
     ckks_build(double scale, size_t pmd);
 
+    void createGaloisKeys(int start, int end);
+
     Plaintext encode(double input);
     Plaintext encode(const double& input, Ciphertext& ctxt);
     Plaintext encode(const double& input, Ciphertext& ctxt, double scale);
@@ -65,7 +67,10 @@ public:
     
     vector<Plaintext> encode_matrix(vector<vector<double>> U, Ciphertext& x);
     Ciphertext rotate(Ciphertext& x, int k);
-    Ciphertext linear_transform(Ciphertext& x, vector<Plaintext>& dVecs);
+    Ciphertext linear_transform_sub(Ciphertext& x, Plaintext& coeffs, int rot, int xLength);
+    Ciphertext linear_transform(Ciphertext& x, vector<vector<double>>& dVecs, int xLength);
     Ciphertext matrix_multiplication(Ciphertext& A, Ciphertext& B, int originalD);
+
     void debug_printMatrix(Ciphertext& A, int originalD, string title);
+    void debug_vector(vector<double> A, int size, string title);
 };

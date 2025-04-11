@@ -173,66 +173,51 @@ vector<double> calculatePoly(const vector<double>& x, const vector<double>& y) {
     return result;
 }
 
-
-// 행렬 생성
-vector<vector<double>> make_matrix(int d, const string& type)
+//행렬 전체 프로세스
+vector<vector<double>> make_matrix(int inputsize, const string& type)
 {
-    int size = d*d;
-    vector<vector<double>> result(size, vector<double>(size, 0));
+    auto fresh_matrix = type_matrix(inputsize, type);
+    //auto p_r_d_matrix = pad_matrix(fresh_matrix, outputsize);
+    auto d_matrix = diagonal_matrix(fresh_matrix);
+    return d_matrix;
+}
 
-    if (type == "sigma")
-    {
-        for (int i = 0; i < d; ++i)
-        {
-            for (int j = 0; j < d; ++j)
-            {
-                int row = d * i + j;
-                int col = d * i + (i + j) % d;
-                result[row][col] = 1;
-            }
-        }
-    }
-    else if (type == "tau")
-    {
-        for (int i = 0; i < d; ++i)
-        {
-            for (int j = 0; j < d; ++j)
-            {
-                int row = d * i + j;
-                int col = d * ((i + j) % d) + j;
-                result[row][col] = 1;
-            }
-        }
-    }
-    else if (type.rfind("phi", 0) == 0)
-    {
-        int k = 0;
-        if (type.length() > 3) k = stoi(type.substr(3));
-        for (int i = 0; i < d; ++i)
-        {
-            for (int j = 0; j < d; ++j)
-            {
-                int row = d * i + j;
-                int col = d * i + ((j + k) % d);
-                result[row][col] = 1;
-            }
-        }
-    }
-    else if (type.rfind("psi", 0) == 0)
-    {
-        int k = 0;
-        if (type.length() > 3) k = stoi(type.substr(3));
-        for (int i = 0; i < d; ++i)
-        {
-            for (int j = 0; j < d; ++j)
-            {
-                int row = d * i + j;
-                int col = d * ((i + k) % d) + j;
-                result[row][col] = 1;
-            }
-        }
-    }
+// 타입에 맞는 행렬 생성
+vector<vector<double>> type_matrix(int originSize, const string& type)
+{
+    int resultSize = originSize*originSize;
+    vector<vector<double>> result(resultSize, vector<double>(resultSize, 0));
 
+    int row, col = 0;
+    for (int i = 0; i < originSize; i++)
+    {
+        for (int j = 0; j < originSize; j++)
+        {
+            row = originSize * i + j;
+            if (type == "sigma")
+            {
+                col = originSize * i + (i + j) % originSize;
+            }
+            else if (type == "tau")
+            {
+                col = originSize * ((i + j) % originSize) + j;
+            }
+            else
+            {
+                int k = stoi(type.substr(3));
+                string type2 = type.substr(0, 3);
+                if (type2 == "phi")
+                {
+                    col = originSize * i + ((j + k) % originSize);
+                }
+                else if (type2 == "psi")
+                {
+                    col = originSize * ((i + k) % originSize) + j;
+                }
+            }
+            result[row][col] = 1;
+        }
+    }
     return result;
 }
 

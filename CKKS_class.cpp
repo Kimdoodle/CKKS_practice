@@ -10,7 +10,7 @@ ckks_build::ckks_build(double scale, size_t pmd)
     parms->set_poly_modulus_degree(pmd);
     
     // set modulus chain.
-    modulus = { 60, 60, 60 , 60 , 60 , 60 , 60 , 60 };
+    modulus = { 60, 60, 60 , 60 , 60, 60 };
 
     parms->set_coeff_modulus(CoeffModulus::Create(pmd, modulus));
 
@@ -20,7 +20,6 @@ ckks_build::ckks_build(double scale, size_t pmd)
     sk = keygen->secret_key();
     keygen->create_public_key(pk);
     keygen->create_relin_keys(rlk);
-    keygen->create_galois_keys(std::vector<int32_t>{1}, glk);
 
     enc = make_unique<Encryptor>(*context, pk);
     eva = make_unique<Evaluator>(*context);
@@ -28,6 +27,13 @@ ckks_build::ckks_build(double scale, size_t pmd)
     encoder = make_unique<CKKSEncoder>(*context);
 }
 
+void ckks_build::createGaloisKeys(int start, int end)
+{
+    vector<int> list;
+    for (int i = start; i <= end; i++)
+        list.push_back(i);
+    keygen->create_galois_keys(list, glk);
+}
 
 // encode coeff. Only 1 value needed.
 Plaintext ckks_build::encode(double input)
@@ -62,7 +68,7 @@ Plaintext ckks_build::encode(const vector<double>& input)
 Plaintext ckks_build::encode(const vector<double>& input, Ciphertext& ctxt)
 {
     Plaintext plain;
-    encoder->encode(input, ctxt.scale(), plain);
+    encoder->encode(input, ctxt.parms_id(), ctxt.scale(), plain);
     return plain;
 }
 
@@ -388,19 +394,47 @@ Ciphertext ckks_build::rotate(Ciphertext &x, int k)
     return res;
 }
 
-
-Ciphertext ckks_build::linear_transform(Ciphertext& x, vector<Plaintext>& dVecs)
+Ciphertext ckks_build::linear_transform_sub(Ciphertext& x, Plaintext& coeffs, int rot, int xLength)
 {
-    Ciphertext ctprime, temp;
-    Ciphertext tempx = x;
-    eva->multiply_plain(x, dVecs[0], ctprime);
-    eva->relinearize_inplace(ctprime, rlk);
+    Ciphertext rotated_x, temp1, temp2, result;
+    rotated_x = rotate(x, rot);
+    eva->multiply_plain(rotated_x, coeffs, temp1);
+    rotated_x = rotate(x, rot - xLength);
+    eva->multiply_plain(rotated_x, coeffs, temp2);
+    eva->add(temp1, temp2, result);
 
-    for (int i = 1; i < dVecs.size(); i++) {
-        //tempx = rotate(tempx, 1);
-        debug_printMatrix(x, 9, "tempx" + to_string(i));
-        eva->multiply_plain(x, dVecs[i], temp);
-        eva->relinearize_inplace(x, rlk);
+    //cout << "----------------------- " << rot << " ---------------------- - " << endl;
+    //debug_vector(decode_ctxt(x), 9, "x<-" + to_string(rot));
+    //debug_vector(decode_ctxt(result), 9, "ctprime");
+
+    return result;
+}
+
+Ciphertext ckks_build::linear_transform(Ciphertext& x, vector<vector<double>>& dVecs, int xLength)
+{
+    Ciphertext ctprime, temp, rotated_x;
+    rotated_x = x;
+    //1이 포함된 대각벡터만 추출
+    vector<vector<double>> valid_dVecs;
+    vector<int> valid_rotations;
+
+    for (int i = 0; i < dVecs.size(); ++i) {
+        const auto& row = dVecs[i];
+        bool isValid = std::any_of(row.begin(), row.end(), [](double val) {
+            return val != 0.0;
+            });
+        if (isValid) {
+            valid_dVecs.push_back(row);
+            valid_rotations.push_back(i);
+        }
+    }
+
+    vector<Plaintext> encoded_dVecs = encode_matrix(valid_dVecs, x);
+    ctprime = linear_transform_sub(x, encoded_dVecs[0], valid_rotations[0], xLength);
+
+    for (int i = 1; i < encoded_dVecs.size(); i++)
+    {
+        temp = linear_transform_sub(x, encoded_dVecs[i], valid_rotations[i], xLength);
         eva->add(temp, ctprime, ctprime);
     }
     return ctprime;
@@ -408,61 +442,63 @@ Ciphertext ckks_build::linear_transform(Ciphertext& x, vector<Plaintext>& dVecs)
 
 Ciphertext ckks_build::matrix_multiplication(Ciphertext& A, Ciphertext& B, int originalD)
 {
+    createGaloisKeys(-originalD, originalD);
+
     vector<vector<double>> matrix, d_matrix, pad_d_matrix;
     vector<Plaintext> encoded_matrix;
     int sizeU = int(sqrt(poly_modulus_degree / 2));
+    int d = int(sqrt(originalD));
 
     // Step 1-1
-    matrix = make_matrix(originalD, "sigma");
-    d_matrix = diagonal_matrix(matrix);
-    pad_d_matrix = pad_matrix(d_matrix, sizeU);
-    encoded_matrix = encode_matrix(pad_d_matrix, A);
-    Ciphertext ctA0 = linear_transform(A, encoded_matrix); // scale+1
-    eva->relinearize_inplace(ctA0, rlk);
+    matrix = make_matrix(d, "sigma");
+    Ciphertext ctA0 = linear_transform(A, matrix, originalD); // scale+1
     eva->rescale_to_next_inplace(ctA0);
-    debug_printMatrix(ctA0, originalD, "ctA0");
+    //debug_printMatrix(ctA0, originalD, "ctA0");
 
     //Step 1-2
-    matrix = make_matrix(originalD, "tau");
-    d_matrix = diagonal_matrix(matrix);
-    encoded_matrix = encode_matrix(d_matrix, B);
-    Ciphertext ctB0 = linear_transform(A, encoded_matrix); // scale+1
-    eva->relinearize_inplace(ctB0, rlk);
+    matrix = make_matrix(d, "tau");
+    Ciphertext ctB0 = linear_transform(B, matrix, originalD); // scale+1
     eva->rescale_to_next_inplace(ctB0);
-    debug_printMatrix(ctB0, originalD, "ctB0");
+    //debug_printMatrix(ctB0, originalD, "ctB0");
 
     //Step 2
-    vector<Ciphertext> ctAk_vector = { ctA0 };
-    vector<Ciphertext> ctBk_vector = { ctB0 };
+    vector<Ciphertext> ctAk_vector, ctBk_vector;
     Ciphertext ctAk, ctBk;
-    for (int k = 1; k < originalD; k++)
+    for (int k = 0; k < originalD; k++)
     {
-        matrix = make_matrix(originalD, "phi" + to_string(k));
-        d_matrix = diagonal_matrix(matrix);
-        encoded_matrix = encode_matrix(d_matrix, A);
-        ctAk = linear_transform(A, encoded_matrix);
-        eva->relinearize_inplace(ctAk, rlk);
+        matrix = make_matrix(d, "phi" + to_string(k));
+        ctAk = linear_transform(ctA0, matrix, originalD);
         eva->rescale_to_next_inplace(ctAk);
         ctAk_vector.push_back(ctAk);
 
-        matrix = make_matrix(originalD, "psi" + to_string(k));
-        d_matrix = diagonal_matrix(matrix);
-        encoded_matrix = encode_matrix(d_matrix, B);
-        ctBk = linear_transform(B, encoded_matrix);
-        eva->relinearize_inplace(ctBk, rlk);
+        matrix = make_matrix(d, "psi" + to_string(k));
+        ctBk = linear_transform(ctB0, matrix, originalD);
         eva->rescale_to_next_inplace(ctBk);
         ctBk_vector.push_back(ctBk);
+
+        //debug_printMatrix(ctAk, originalD, "ctA" + to_string(k));
+        //debug_printMatrix(ctBk, originalD, "ctB" + to_string(k));
     }
-    
+    //eva->rescale_to_next_inplace(ctA0);
+    //eva->rescale_to_next_inplace(ctB0);
+    //ctAk_vector.insert(ctAk_vector.begin(), ctA0);
+    //ctBk_vector.insert(ctBk_vector.begin(), ctB0);
+
     //Step3
-    Ciphertext ctAB, temp;
-    mult(ctA0, ctB0, ctAB);
-    
+   Ciphertext ctAB, temp;
+    eva->multiply(ctAk_vector[0], ctBk_vector[0], ctAB);
+    eva->relinearize_inplace(ctAB, rlk);
+
     for (int k = 1; k < originalD; k++)
     {
-        mult(ctAk_vector[k], ctBk_vector[k], temp);
-        add(ctAB, temp, ctAB);
+        eva->multiply(ctAk_vector[k], ctBk_vector[k], temp);
+        eva->relinearize_inplace(temp, rlk);
+        eva->add(ctAB, temp, ctAB);
+
+        //debug_vector(decode_ctxt(temp), 9, "ctA" + to_string(k));
+        //debug_vector(decode_ctxt(ctAB), 9, "ctAB");
     }
+    eva->rescale_to_next_inplace(ctAB);
     return ctAB;
 }
 
@@ -470,7 +506,15 @@ void ckks_build::debug_printMatrix(Ciphertext& A, int originalD, string title)
 {
     vector<double> decA = decode_ctxt(A);
     vector<vector<double>> unflat_decA = unflatten_matrix(decA, int(sqrt(decA.size())));
-    vector<vector<double>> final_decA = ipad_matrix(unflat_decA, int(sqrt(decA.size())));
+    vector<vector<double>> final_decA = ipad_matrix(unflat_decA, originalD);
     cout << title << endl;
     printMatrix(final_decA);
+}
+
+void ckks_build::debug_vector(vector<double> A, int size, string title)
+{
+    cout << title << endl;
+    vector<double> dectest = A;
+    dectest.resize(size);
+    printVector(dectest, false, 0);
 }

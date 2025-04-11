@@ -18,7 +18,8 @@ double polypolyEvaluate(const vector<double>& poly, double input, int d);
 vector<double> polypolyEvaluate(const vector<double>& poly, vector<double>& input);
 vector<double> calculatePoly(const vector<double>& x, const vector<double>& y);
 
-vector<vector<double>> make_matrix(int size, const string& type);
+vector<vector<double>> make_matrix(int inputsize, const string& type);
+vector<vector<double>> type_matrix(int originSize, const string& type);
 vector<vector<double>> pad_matrix(vector<vector<double>> U, int d);
 vector<vector<double>> ipad_matrix(vector<vector<double>> U, int d);
 vector<double> flatten_matrix(vector<vector<double>> U);
