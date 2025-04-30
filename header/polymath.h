@@ -1,5 +1,4 @@
-#ifndef POLYMATH_H
-#define POLYMATH_H
+#pragma once
 
 #include "SEAL_VS.h"
 
@@ -17,5 +16,3 @@ double polyEvaluate(const vector<double>& poly, double input);
 double polypolyEvaluate(const vector<double>& poly, double input, int d);
 vector<double> polypolyEvaluate(const vector<double>& poly, vector<double>& input);
 vector<double> calculatePoly(const vector<double>& x, const vector<double>& y);
-
-#endif // POLYMATH_H

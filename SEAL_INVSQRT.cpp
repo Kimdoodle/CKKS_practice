@@ -9,12 +9,14 @@
 	5. depth, time consumption comparison
 */
 int main() {
-	double delta = 1e-5;
-	double err = 1e-4;
-	int iter = 8;
+	//double delta = 1e-5;
+	//double err = 1e-4;
+	//int iter = 8;
 
-	auto [k1, k2] = find_bounds(iter, delta, err, "debug");
-	cout << k1 << " " << k2 << endl;
+	//auto [k1, k2] = find_bounds(iter, delta, err, "debug");
+	//cout << k1 << " " << k2 << endl;
+
+	cout << approx_comp(0.7, 0.5, 3, 3);
 }
 //int main()
 //{

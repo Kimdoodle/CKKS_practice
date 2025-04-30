@@ -1,6 +1,6 @@
 #include "header/SEAL_VS.h"
 
-// 팩토리얼
+// ?�토리얼
 int factorial(int a, int b) {
     int res = 1;
     for(int i=a; i>b; i--)
@@ -8,7 +8,7 @@ int factorial(int a, int b) {
     return res;
 }
 
-//밑이 2인 로그
+//밑이 2??로그
 double log2(double x, double base) {
     return log(x)/log(base);
 }
@@ -42,7 +42,7 @@ vector<double> sample_data(double min, double max, double epsilon,  int iter)
     return samples;
 }
 
-//특정 값을 size만큼 복제한 벡터 생성
+//?�정 값을 size만큼 복제??벡터 ?�성
 vector<double> duplicate_vector(double input, int size)
 {
     vector<double> res;
@@ -50,7 +50,7 @@ vector<double> duplicate_vector(double input, int size)
     return res;
 }
 
-//벡터의 모든 요소에 plain 곱셈
+//multiply scalar in each vector
 vector<double> multPlainPolynomial(vector<double>& v, double scalar)
 {
     vector<double> result(v.size());
@@ -60,9 +60,9 @@ vector<double> multPlainPolynomial(vector<double>& v, double scalar)
 }
 
 /*
-    다항식 곱셈을 통한 계수 벡터 생성
-    1. Toeplitz 행렬을 생성
-    2. 행렬 * 벡터 결과를 반환
+    ?�항??곱셈???�한 계수 벡터 ?�성
+    1. Toeplitz ?�렬???�성
+    2. ?�렬 * 벡터 결과�?반환
 */
 vector<vector<double>> createToeplitzMatrix(const vector<double>& coeffs, int result_size) {
     vector<vector<double>> T(result_size, vector<double>(result_size, 0));
@@ -77,7 +77,7 @@ vector<vector<double>> createToeplitzMatrix(const vector<double>& coeffs, int re
     return T;
 }
 
-// 행렬과 벡터의 곱
+// ?�렬�?벡터??�?
 vector<double> multiplyMatrixVector(const vector<vector<double>>& matrix, const vector<double>& vec) {
     size_t size = matrix.size();
     vector<double> result(size, 0);
@@ -92,7 +92,7 @@ vector<double> multiplyMatrixVector(const vector<vector<double>>& matrix, const 
 }
 
 
-// 다항식 곱셈 함수
+// ?�항??곱셈 ?�수
 vector<double> multPolynomial(const vector<double>& a, const vector<double>& b) {
     int result_size = static_cast<int>(a.size() + b.size() - 1);
     vector<vector<double>> T = createToeplitzMatrix(a, result_size);
@@ -105,7 +105,7 @@ vector<double> multPolynomial(const vector<double>& a, const vector<double>& b) 
     return multiplyMatrixVector(T, extended_b);
 }
 
-// 다항식 거듭제곱 함수
+// ?�항??거듭?�곱 ?�수
 vector<double> powerPolynomial(const vector<double>& poly, int exponent) {
     vector<double> result = {1};
 
@@ -116,8 +116,9 @@ vector<double> powerPolynomial(const vector<double>& poly, int exponent) {
     return result;
 }
 
-//다항식 계산함수
-double polyEvaluate(const vector<double>& poly, double input) {
+//evaluate polynomial.
+double polyEvaluate(const vector<double>& poly, double input) 
+{
     double result = 0.0;
     for(int i=0; i<poly.size(); i++) {
         result += poly[i] * pow(input, i);
@@ -126,7 +127,7 @@ double polyEvaluate(const vector<double>& poly, double input) {
 }
 
 
-//다항식 반복 계산함수
+//evaluate polynomial d times.
 double polypolyEvaluate(const vector<double>& poly, double input, int d) {
     double x = input;
     for (int i = 0; i < d; i++) {
@@ -143,7 +144,7 @@ vector<double> polypolyEvaluate(const vector<double>& poly, vector<double>& inpu
     return result;
 }
 
-// (x,y)점들로 다항식을 계산하는 함수(라그랑주 다항식)
+// (x,y)?�들�??�항?�을 계산?�는 ?�수(?�그?�주 ?�항??
 vector<double> calculatePoly(const vector<double>& x, const vector<double>& y) {
     int n = x.size();
     vector<double> result(n, 0.0);
@@ -152,7 +153,7 @@ vector<double> calculatePoly(const vector<double>& x, const vector<double>& y) {
         double xi = x[i];
         double yi = y[i];
 
-        vector<double> term = { 1.0 }; // L_i(x) = 1 초기화
+        vector<double> term = { 1.0 }; // L_i(x) = 1 초기??
         double denominator = 1.0;
 
         for (int j = 0; j < n; ++j) {
@@ -165,7 +166,7 @@ vector<double> calculatePoly(const vector<double>& x, const vector<double>& y) {
 
         term = multPlainPolynomial(term, yi / denominator); // y_i / L_i(xi)
 
-        // 결과 다항식에 더하기
+        // 결과 ?�항?�에 ?�하�?
         for (int k = 0; k < term.size(); ++k) {
             result[k] += term[k];
         }
