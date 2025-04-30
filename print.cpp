@@ -60,3 +60,9 @@ void printStep(vector<double>& realValue, vector<double>& poly, vector<double>& 
     cout << "Current Scale: " << y.scale() << endl;
     cout << "---" << endl;
 }
+
+void debug_print(string message, string mode)
+{
+    if (mode == "debug")
+        cout << message << endl;
+}

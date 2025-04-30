@@ -1,14 +1,14 @@
 #include "header/SEAL_VS.h"
 
-//c_n 계산
+//calculate c_n
 double calC(int n) {
     return (2*n+1)/pow(4.0, n)*(factorial(2*n)/(factorial(n)*factorial(n)));
 }
 
-//f_n 계산
+//calculate f_n
 vector<double> computeF(int n) {
     vector<double> coeff;
-    // (2n+2)개의 항
+    // (2n+2)
     for(int i=0; i<(2*n+2); i++)
         coeff.push_back(0.0);
 
@@ -29,7 +29,7 @@ vector<double> computeF(int n) {
 //h_n 계산
 vector<double> computeH(int n) {
     vector<double> coeff;
-    // 최대차수는 2n+1 -> (2n+2)개의 항
+    // 최�?차수??2n+1 -> (2n+2)개의 ??
     for(int i=0; i<(2*n+2); i++)
         coeff.push_back(0.0);
 
@@ -47,35 +47,35 @@ vector<double> computeH(int n) {
 // g_n 계산 (Remez Algorithm)
 vector<double> computeG(int n, double tau, double pre, double a, double b) 
 {
-    // 1. [a,b] 구간을 동일한 간격으로 나누는 x (n+1)개 설정
+    // 1. [a,b] 구간???�일??간격?�로 ?�누??x (n+1)�??�정
     vector<double> allX(n + 1);
     double step = (b - a) / n;
     for (int i = 0; i <= n; i++) {
         allX[i] = a + step * i;
     }
 
-    // 2. p(x)-f(x)가 허용오차 E 이하인 p(x)를 검색 (f(x): y=1)
+    // 2. p(x)-f(x)가 ?�용?�차 E ?�하??p(x)�?검??(f(x): y=1)
     vector<double> allY(n + 1);
     for (int i = 0; i <= n; i++) {
         allY[i] = 1 + tau * pow(-1.0, i);
     }
 
-    // 다항식 근사 계산 (p(x))
+    // ?�항??근사 계산 (p(x))
     vector<double> p = calculatePoly(allX, allY);
 
-    // 3. 새로운 극대점 찾기
+    // 3. ?�로??극�???찾기
     vector<double> newX(n + 2);
     for (int i = 0; i <= n + 1; i++) {
         newX[i] = (allX[i] + allX[i + 1]) / 2.0;
     }
 
-    // 4. 새로운 극대점에서 오차를 다시 계산
+    // 4. ?�로??극�??�에???�차�??�시 계산
     vector<double> error(n + 2);
     for (int i = 0; i <= n + 1; i++) {
         error[i] = abs(polyEvaluate(p, newX[i]) - 1);
     }
 
-    // 5. 최대 오차 위치 찾기
+    // 5. 최�? ?�차 ?�치 찾기
     int maxErrorIndex = 0;
     for (int i = 1; i <= n + 1; i++) {
         if (error[i] > error[maxErrorIndex]) {
@@ -83,7 +83,7 @@ vector<double> computeG(int n, double tau, double pre, double a, double b)
         }
     }
 
-    // 6. 새로운 극대점과 오차를 기준으로 g_n 갱신
+    // 6. ?�로??극�??�과 ?�차�?기�??�로 g_n 갱신
     vector<double> g(n + 1);
     for (int i = 0; i <= n; i++) {
         g[i] = allX[i] + pre * (newX[maxErrorIndex] - allX[i]);
@@ -103,9 +103,9 @@ double signFunction(double a, int d) {
     return x;
 }
 
-//f_n만을 사용한 비교함수
+//f_n만을 ?�용??비교?�수
 double newComp(double a, double b, int n, int d) {
-    //a, b를 [0,1] 내 데이터로 변환
+    //a, b�?[0,1] ???�이?�로 변??
     while(a>1 || b>1) {
         a /= 2;
         b /= 2;
@@ -116,20 +116,115 @@ double newComp(double a, double b, int n, int d) {
     return (result + 1)/2;
 }
 
-//f_n, g_n을 사용한 비교함수
+//f_n, g_n???�용??비교?�수
 //double newCompG;
 
-//절댓값 함수
+//?�댓�??�수
 double calAbs(double a, int n, int d) {
     return a * signFunction(a, d);
 }
 
-//최솟값 함수
+//최솟�??�수
 double calMin(double a, double b, int n, int d) {
     return (a+b)/2 - calAbs((a-b), n, d)/2;
 }
 
-//최댓값 함수
+//최댓�??�수
 double calMax(double a, double b, int n, int d) {
     return (a+b)/2 + calAbs((a-b), n, d)/2;
+}
+
+//Newton method.
+double newton(double x, double y)
+{
+    return 0.5 * y * (3 - (x * y * y));
+}
+
+double iter_newton(double x, double y, int iter)
+{
+    double y2 = x;
+    for (int i = 0; i < iter; i++)
+    {
+        y2 = newton(y, y2);
+    }
+    return y2;
+}
+
+double calculate_k1(double low, double high, int iter, double delta, double err, string printmode)
+{
+    int count = 0;
+    debug_print(format("Count {}", count), printmode);
+    debug_print(format("Range: {:.6f} ~ {:.6f}", low, high), printmode);
+
+    while ((high - low) >= delta)
+    {
+        count += 1;
+        debug_print(format("Count {}", count), printmode);
+
+        double mid = (high + low) / 2;
+        double val = abs(iter_newton(mid, 1.0, iter) - 1);
+        debug_print(format("val: {}", val), printmode);
+
+        if (val <= err)
+        {
+            high = mid;
+            debug_print("high -> mid", printmode);
+        }
+        else
+        {
+            low = mid + delta;
+            debug_print("Increasing low(+delta)", printmode);
+        }
+        debug_print(format("Low: {:.6f} \t High: {:.6f}", low, high), printmode);
+    }
+
+    return low;
+}
+
+double calculate_k2(double low, double high, int iter, double delta, double err, string printmode)
+{
+    int count = 0;
+    debug_print(format("Count {}", count), printmode);
+    debug_print(format("Range: {:.6f} ~ {:.6f}", low, high), printmode);
+
+    while ((high - low) >= delta)
+    {
+        count += 1;
+        debug_print(format("Count {}", count), printmode);
+
+        double mid = (high + low) / 2;
+        double val = abs(iter_newton(mid, 1.0, iter) - 1);
+
+        if (val <= err)
+        {
+            low = mid;
+            debug_print("low -> mid", printmode);
+        }
+        else
+        {
+            high = mid - delta;
+            debug_print("Decreasing high(-delta)", printmode);
+        }
+
+        debug_print(format("Low: {:.6f} \t High: {:.6f}", low, high), printmode);
+    }
+
+    return high;
+}
+
+pair<double, double> find_bounds(int iter, double delta, double err, const string& mode)
+{
+    debug_print("Find Lower Bound k1.", mode);
+    double low1 = 2 * delta - 1;
+    double high1 = 1.0;
+    double k1 = calculate_k1(low1, high1, iter, delta, err, mode);
+
+    debug_print(string(30, '-'), mode);
+    debug_print("Find Upper Bound k2.", mode);
+    double low2 = 1.0;
+    double high2 = 2 * sqrt(3.0) - 1;
+    double k2 = calculate_k2(low2, high2, iter, delta, err, mode);
+
+    debug_print(string(30, '-'), mode);
+    return { k1, k2 };
 }

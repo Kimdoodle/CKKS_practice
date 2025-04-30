@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <iomanip>
 #include <chrono>
+#include <format>
 #include "seal/seal.h"
 
 using namespace std;

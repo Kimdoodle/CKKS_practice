@@ -1,9 +1,9 @@
-## ğŸªŸ Installation Guide (Windows)
+## ?ªŸ Installation Guide (Windows)
 
-### âœ… Requirements
+### ??Requirements
 - Microsoft Visual Studio 2022
 
-### âš™ï¸ Build Steps
+### ?™ï¸ Build Steps
 1. Open ```x64 Native Tools Command Prompt for VS 2022```
   
 2. Run the following commands:
