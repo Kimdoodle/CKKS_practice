@@ -229,6 +229,53 @@ pair<double, double> find_bounds(int iter, double delta, double err, const strin
     return { k1, k2 };
 }
 
+// search x2 using newton-raphson method.
+double solve_eq5(double k1, double k2, double x, double x0, int max_iter, double tol)
+{
+    double x2 = x0;
+    for (int i = 0; i < max_iter; ++i)
+    {
+        // f(x2)
+        double f = pow(k2, 2) * pow(x, 3)
+            - 6 * pow(k2, 2) * pow(x, 2) * x2
+            + 9 * pow(k2, 2) * x * pow(x2, 2)
+            - 4 * pow(k1, 2) * pow(x2, 3);
+
+        // f'(x2)
+        double df = -6 * pow(k2, 2) * pow(x, 2)
+            + 18 * pow(k2, 2) * x * x2
+            - 12 * pow(k1, 2) * pow(x2, 2);
+
+        double dx = f / df;
+        x2 = x2 - dx;
+
+        if (abs(dx) < tol)
+            break;
+    }
+    return x2;
+}
+
+double solve_eq5_for_x(double k1, double k2, double x2_fixed, double x0, int max_iter, double tol) 
+{
+    double x = x0;
+    for (int i = 0; i < max_iter; ++i) {
+        double f = pow(k2, 2) * pow(x, 3)
+            - 6 * pow(k2, 2) * pow(x, 2) * x2_fixed
+            + 9 * pow(k2, 2) * x * pow(x2_fixed, 2)
+            - 4 * pow(k1, 2) * pow(x2_fixed, 3);
+
+        double df = 3 * pow(k2, 2) * pow(x, 2)
+            - 12 * pow(k2, 2) * x * x2_fixed
+            + 9 * pow(k2, 2) * pow(x2_fixed, 2);
+
+        double dx = f / df;
+        x -= dx;
+
+        if (abs(dx) < tol) break;
+    }
+    return x;
+}
+
 //comparison functions
 double approx_sign(double x, int dg, int df)
 {
@@ -246,6 +293,5 @@ double approx_sign(double x, int dg, int df)
 double approx_comp(double a, double b, int dg, int df)
 {
     double sign = approx_sign(a - b, dg, df);
-    cout << "sign" << sign << endl;
     return (sign + 1) / 2;
 }

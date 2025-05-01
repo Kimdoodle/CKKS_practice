@@ -18,6 +18,9 @@ double calculate_k1(double low, double high, int iter, double delta, double err,
 double calculate_k2(double low, double high, int iter, double delta, double err, string printmode);
 pair<double, double> find_bounds(int iter, double delta, double err, const string& mode);
 
+double solve_eq5(double k1, double k2, double x, double x0, int max_iter = 100, double tol = 1e-10);
+double solve_eq5_for_x(double k1, double k2, double x2_fixed, double x0, int max_iter = 100, double tol = 1e-10);
+
 //comparison functions
 double approx_sign(double x, int dg, int df);
 double approx_comp(double a, double b, int dg, int df);

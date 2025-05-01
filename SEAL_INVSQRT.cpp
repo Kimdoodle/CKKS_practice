@@ -9,14 +9,30 @@
 	5. depth, time consumption comparison
 */
 int main() {
-	//double delta = 1e-5;
-	//double err = 1e-4;
-	//int iter = 8;
+	string printmode = "debug";
+	double delta = 1e-5;
+	double err = 1e-4;
+	int iter = 9;
 
-	//auto [k1, k2] = find_bounds(iter, delta, err, "debug");
-	//cout << k1 << " " << k2 << endl;
+	// k1, k2 계산
+	auto [k1, k2] = find_bounds(iter, delta, err, printmode);
+	debug_print(format("k1: {}", k1), printmode);
+	debug_print(format("k2: {}", k2), printmode);
 
-	cout << approx_comp(0.7, 0.5, 3, 3);
+	// L2 계산
+	double a = 1e-4; 
+	double b = 1e3; 
+
+	double x2 = solve_eq5(k1, k2, b, 400);
+	debug_print(format("Tangent point x2: {}", x2), printmode);
+
+	double pivot = solve_eq5_for_x(k1, k2, x2, 1.0);
+	debug_print(format("Pivot point P: {}", pivot), printmode);
+
+	double x1 = solve_eq5(k1, k2, pivot, 1.0);
+	debug_print(format("Tangent point x1: {}", x1), printmode);
+
+	return 0;
 }
 //int main()
 //{
