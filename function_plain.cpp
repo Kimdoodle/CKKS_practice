@@ -276,6 +276,13 @@ double solve_eq5_for_x(double k1, double k2, double x2_fixed, double x0, int max
     return x;
 }
 
+vector<double> tangent_coeff(double k1, double k2, double x)
+{
+    double term0 = (3 * k2) / (2 * sqrt(x));
+    double term1 = (-0.5) * k2 / pow(x, 1.5);
+    return { term0, term1 };
+}
+
 //comparison functions
 double approx_sign(double x, int dg, int df)
 {
@@ -294,4 +301,10 @@ double approx_comp(double a, double b, int dg, int df)
 {
     double sign = approx_sign(a - b, dg, df);
     return (sign + 1) / 2;
+}
+
+double compute_h(double p, double x, int dg, int df, vector<double> L1, vector<double> L2)
+{
+    double beta_x = approx_comp(p, x, dg, df);
+    return (1 - beta_x) * polyEvaluate(L1, x) + beta_x * polyEvaluate(L2, x);
 }

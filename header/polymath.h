@@ -5,7 +5,7 @@
 int factorial(int a, int b=0);
 double log2(double x, double base);
 vector<double> differentiate(vector<double> poly);
-vector<double> sample_data(double min, double max, double epsilon = 0.0, int iter = 1);
+vector<double> sample_data(double min, double max, int iter = 1);
 vector<double> duplicate_vector(double input, int size);
 vector<vector<double>> createToeplitzMatrix(const vector<double>& coeffs, int result_size);
 vector<double> multiplyMatrixVector(const vector<vector<double>>& matrix, const vector<double>& vec);

@@ -24,19 +24,18 @@ vector<double> differentiate(vector<double> poly)
 }
 
 /*
-    sample data in [min, -epsilon] U [epsilon, max]
+    sample data in [min, max]
     repeat iter times.
 */
-vector<double> sample_data(double min, double max, double epsilon,  int iter)
+vector<double> sample_data(double min, double max, int iter)
 {
     vector<double> samples;
     samples.reserve(iter);
     random_device rd;
     mt19937 gen(rd());
-    uniform_real_distribution<double> dist1(-1.0, -epsilon);
-    uniform_real_distribution<double> dist2(epsilon, 1.0);
+    uniform_real_distribution<double> dist(min, max);
     for (int i = 0; i < iter; i++) {
-        double sample = (rand() % 2 == 0) ? dist1(gen) : dist2(gen);
+        double sample = dist(gen);
         samples.push_back(sample);
     }
     return samples;
