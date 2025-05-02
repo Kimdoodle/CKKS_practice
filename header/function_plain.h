@@ -22,7 +22,10 @@ double solve_eq5(double k1, double k2, double x, double x0, int max_iter = 100, 
 double solve_eq5_for_x(double k1, double k2, double x2_fixed, double x0, int max_iter = 100, double tol = 1e-10);
 vector<double> tangent_coeff(double k1, double k2, double x);
 
-//comparison functions
 double approx_sign(double x, int dg, int df);
 double approx_comp(double a, double b, int dg, int df);
 double compute_h(double p, double x, int dg, int df, vector<double> L1, vector<double> L2);
+
+int newton_algorithm(double x, double x0, double err, int iter, string printmode);
+int goldschmidt_algorithm(double x, double x0, double err, int iter, string printmode);
+void newton_goodGuess(double x, double a, double b, double delta, double err, int iter, string printmode);

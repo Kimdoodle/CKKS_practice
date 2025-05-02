@@ -4,70 +4,42 @@
 	Todo
 	1. newton method(plain, ctxt)
 	2. goldschmidt algorithm(plain, ctxt)
-	3. good initial guess algorithm(plain)
+	3. good initial guess algorithm(plain) - clear
 	4. good initial guess algorithm(ctxt)
 	5. depth, time consumption comparison
 */
 int main() {
-	double x = 2;
-	cout << "Initial X : " << x << endl;
-
-	string printmode = "debug";
-	double delta = 1e-5;
+	double answer = 2.0;
+	double x0 = 1.0;
 	double err = 1e-4;
-	int iter = 9;
-	
-	// k1, k2 계산
-	auto [k1, k2] = find_bounds(iter, delta, err, printmode);
-	debug_print(format("k1: {}", k1), printmode);
-	debug_print(format("k2: {}", k2), printmode);
+	double iter = 9;
+	string printmode = "normal";
 
-	debug_print("---------------------------------", printmode);
-
-	// L2(x2) -> P -> L1(x1) 계산
-	double a = 1e-4;
-	double b = 1e3; 
-
-	double x2 = solve_eq5(k1, k2, b, 400);
-	vector<double> L2 = tangent_coeff(k1, k2, x2);
-	debug_print(format("Tangent point x2:\t{}", x2), printmode);
-
-	double pivot = solve_eq5_for_x(k1, k2, x2, 1.0);
-	debug_print(format("Pivot point P:\t\t{}", pivot), printmode);
-
-	double x1 = solve_eq5(k1, k2, pivot, 1.0);
-	vector<double> L1 = tangent_coeff(k1, k2, x1);
-	debug_print(format("Tangent point x1:\t{}", x1), printmode);
-
-	debug_print("---------------------------------", printmode);
-
-	debug_print("Tangent function L1:\t", printmode);
-	printVector(L1, true);
-	debug_print("Tangent function L2:\t", printmode);
-	printVector(L2, true);
-	
-	debug_print("---------------------------------", printmode);
-
-	// approximate invsqrt(x)	
-	double real_value = 1 / sqrt(x);
-	for (int i = 0; i < 100; i++) {
-		//double x0 = sample_data(x1, 3)[0]; // sample x0 in [x1, x2]
-		//double y0 = compute_h(pivot, x0, dg, df, L1, L2);
-		//debug_print(format("x0:\t{}", x0), printmode);
-		double y0 = sample_data(k1 / sqrt(x), k2 / sqrt(x))[0];
-		debug_print(format("y0:\t{}", y0), printmode);
-
-		double yi = y0;
-		for (int i = 0; i < iter; i++) {
-			yi = newton(x, yi);
-			debug_print(format("y{}:\t{}", (i + 1), yi), printmode);
-			if (abs(yi - real_value) <= err)
-				break;
+	int suc_new;
+	int suc_gold;
+	int new_adv = 0;
+	int gold_adv = 0;
+	for (double a = 1e-5; a <= 1e4; a += 1e-5)
+	{
+		suc_new = newton_algorithm(answer, x0, err, iter, printmode);
+		suc_gold = goldschmidt_algorithm(answer, x0, err, iter, printmode);
+		if (suc_new == -1 && suc_gold != -1)
+		{
+			cout << format("X: {}", a) << endl;
+			cout << format("Newton failed.\t Goldschmidt success. Iter: {}", suc_gold) << endl;
 		}
-		debug_print("---------------------------------", printmode);
+		else if (suc_new != -1 && suc_gold == -1)
+		{
+			cout << format("X: {}", a) << endl;
+			cout << format("Newton success. Iter: {}.\t Goldschmidt failed.", suc_new) << endl;
+		}
+		else if (suc_new > suc_gold)
+			new_adv++;
+		else if (suc_new < suc_gold)
+			gold_adv++;
 	}
-
-	return 0;
+	cout << format("Newton advantage: {} times", new_adv) << endl;
+	cout << format("Goldschmidt advantage: {} times", gold_adv) << endl;
 }
 //int main()
 //{
