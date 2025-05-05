@@ -283,7 +283,6 @@ vector<double> tangent_coeff(double k1, double k2, double x)
     return { term0, term1 };
 }
 
-//comparison functions
 double approx_sign(double x, int dg, int df)
 {
     vector<double> coeff_f = { 0, 35, 0, -35, 0, 21, 0, -5 }; //f3
@@ -319,7 +318,7 @@ int newton_algorithm(double x, double x0, double err, int iter, string printmode
     debug_print(format("y0:\t{}", y0), printmode);
     for (int i = 1; i <= iter; i++) 
     {
-        y0 = newton(x, y0);
+        y0 = newton(x, y0); // 0.5 * y * (3 - (x * y * y));
         debug_print(format("y{}:\t{}", i, y0), printmode);
         error = abs(answer - y0);
         if (error <= err)

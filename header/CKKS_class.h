@@ -23,6 +23,7 @@ private:
 
 public:
     ckks_build(int n, int d, int big_moduli, int small_moduli, double scale, size_t pmd);
+    ckks_build(int moduli, double scale, size_t pmd);
     void modulus_chain_mode1(int big_moduli, int small_moduli, int iter);
     void modulus_chain_mode2(int big_moduli, int small_moduli, int iter1, int iter2);
     void modulus_chain_mode3(int big_moduli, int small_moduli, int iter1);
@@ -46,15 +47,17 @@ public:
     void add(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& result);
     void add(Ciphertext& ctxt1, Ciphertext& ctxt2);
     void add(Plaintext& ptxt, Ciphertext& ctxt);
-    void mult(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& result);
-    void mult(Ciphertext& ctxt1, Ciphertext& ctxt2);
-    void mult(Plaintext& ptxt, Ciphertext& ctxt);
+    void mult(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& result, bool doRescale=true);
+    void mult(Ciphertext& ctxt1, Ciphertext& ctxt2, bool doRescale = true);
+    void mult(Plaintext& ptxt, Ciphertext& ctxt, bool doRescale = true);
     void square(Ciphertext& ctxt);
 
     Ciphertext exp(const Ciphertext& x, int d);
-    //void modulus_equal(Ciphertext& ctxt1, Ciphertext& ctxt2);
+    void modulus_equal(Ciphertext& ctxt1, Ciphertext& ctxt2);
     void scale_equal(Ciphertext& ctxt1, Ciphertext& ctxt2);
     void scale_equal(Plaintext& ptxt, Ciphertext& ctxt);
+    void rescale_triple(Ciphertext& ctxt);
+    int get_scale();
 
     //void mul_plain_double(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination);
     //void mul_cipher_double(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& ctxt3, Ciphertext& destination);

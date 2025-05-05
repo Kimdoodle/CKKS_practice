@@ -34,6 +34,41 @@ ckks_build::ckks_build(int n, int d, int big_moduli, int small_moduli, double sc
     encoder = make_unique<CKKSEncoder>(*context);
 }
 
+ckks_build::ckks_build(int moduli, double scale, size_t pmd)
+{
+    this->scale = scale;
+
+    parms = make_unique<EncryptionParameters>(scheme_type::ckks);
+    parms->set_poly_modulus_degree(pmd);
+
+    // set modulus chain.
+    int maxbitcount = CoeffModulus::MaxBitCount(pmd);
+    int iter = maxbitcount / moduli;
+    modulus_chain_mode2(moduli, moduli, 0, iter-1);
+
+    //check MaxBitCount
+    int r = 0;
+    for (int m : modulus) { r += m; }
+    if (CoeffModulus::MaxBitCount(pmd) < r) {
+        cout << "Error: Max Modulus Size " << CoeffModulus::MaxBitCount(pmd) << " < " << r << endl;
+        exit(0);
+    }
+
+    parms->set_coeff_modulus(CoeffModulus::Create(pmd, modulus));
+
+    context = make_unique<SEALContext>(*parms);
+    print_parameters(*context);
+    keygen = make_unique<KeyGenerator>(*context);
+    sk = keygen->secret_key();
+    keygen->create_public_key(pk);
+    keygen->create_relin_keys(rlk);
+
+    enc = make_unique<Encryptor>(*context, pk);
+    eva = make_unique<Evaluator>(*context);
+    dec = make_unique<Decryptor>(*context, sk);
+    encoder = make_unique<CKKSEncoder>(*context);
+}
+
 /*  
     make modulus chain. 
     Mode1: big moduli at front/end, small moduli fill rest. 
@@ -195,29 +230,33 @@ void ckks_build::add(Plaintext& ptxt, Ciphertext& ctxt)
 }
 
 // Multiply
-void ckks_build::mult(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& result)
+void ckks_build::mult(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& result, bool doRescale)
 {
-    //modulus_equal(ctxt1, ctxt2);
-    scale_equal(ctxt1, ctxt2);
+    modulus_equal(ctxt1, ctxt2);
+    //scale_equal(ctxt1, ctxt2);
     eva->multiply(ctxt1, ctxt2, result);
     eva->relinearize_inplace(result, rlk);
-    eva->rescale_to_next_inplace(result);
+    if(doRescale)
+        eva->rescale_to_next_inplace(result);
 }
 
 //Multiply 2 ciphertexts.
-void ckks_build::mult(Ciphertext& ctxt1, Ciphertext& ctxt2)
+void ckks_build::mult(Ciphertext& ctxt1, Ciphertext& ctxt2, bool doRescale)
 {
-    scale_equal(ctxt1, ctxt2);
+    modulus_equal(ctxt1, ctxt2);
+    //scale_equal(ctxt1, ctxt2);
     eva->multiply_inplace(ctxt1, ctxt2);
     eva->relinearize_inplace(ctxt1, rlk);
-    eva->rescale_to_next_inplace(ctxt1);
+    if (doRescale)
+        eva->rescale_to_next_inplace(ctxt1);
 }
 
 //Multiply plaintext / ciphertext. two data's scale, modulus_level should be equal.
-void ckks_build::mult(Plaintext& ptxt, Ciphertext& ctxt)
+void ckks_build::mult(Plaintext& ptxt, Ciphertext& ctxt, bool doRescale)
 {
     eva->multiply_plain_inplace(ctxt, ptxt);
-    eva->rescale_to_next_inplace(ctxt);
+    if (doRescale)
+        eva->rescale_to_next_inplace(ctxt);
 }
 
 //square ciphertext.
@@ -245,20 +284,20 @@ Ciphertext ckks_build::exp(const Ciphertext& x, int d)
 }
 
 //equal two ciphertext's modulus level.
-//void ckks_build::modulus_equal(Ciphertext& ctxt1, Ciphertext& ctxt2)
-//{
-//    auto level1 = ctxt1.coeff_modulus_size();
-//    auto level2 = ctxt2.coeff_modulus_size();
-//
-//    if (level1 < level2) {
-//        modulus_switch(ctxt2, ctxt1.parms_id());
-//    }
-//    else if (level1 > level2) {
-//        modulus_switch(ctxt1, ctxt2.parms_id());
-//    }
-//}
+void ckks_build::modulus_equal(Ciphertext& ctxt1, Ciphertext& ctxt2)
+{
+    auto level1 = ctxt1.coeff_modulus_size();
+    auto level2 = ctxt2.coeff_modulus_size();
 
-//두 암호문의 scale 통일
+    if (level1 < level2) {
+        eva->mod_switch_to_inplace(ctxt2, ctxt1.parms_id());
+    }
+    else if (level1 > level2) {
+        eva->mod_switch_to_inplace(ctxt1, ctxt2.parms_id());
+    }
+}
+
+//???�호문의 scale ?�일
 void ckks_build::scale_equal(Ciphertext& ctxt1, Ciphertext& ctxt2)
 {
     while (ctxt1.coeff_modulus_size() > ctxt2.coeff_modulus_size()) {
@@ -293,6 +332,16 @@ void ckks_build::scale_equal(Plaintext& ptxt, Ciphertext& ctxt)
     enc->encrypt(ptxt, x);
     scale_equal(x, ctxt);
     dec->decrypt(x, ptxt);
+}
+
+void ckks_build::rescale_triple(Ciphertext& ctxt)
+{
+    eva->rescale_to_next_inplace(ctxt);
+}
+
+int ckks_build::get_scale()
+{
+    return int(log2(scale));
 }
 
 /*################ Double Scale Test ################################*/

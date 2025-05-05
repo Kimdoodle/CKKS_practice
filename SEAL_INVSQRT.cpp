@@ -1,4 +1,5 @@
 ﻿#include "header/SEAL_VS.h"
+void plain_compare();
 
 /*
 	Todo
@@ -8,7 +9,50 @@
 	4. good initial guess algorithm(ctxt)
 	5. depth, time consumption comparison
 */
-int main() {
+int main() 
+{
+	//params for newton method
+	double err = 1e-4;
+	double x = 2.0;
+	double answer = 1 / sqrt(x);
+	int x0_size = 5;
+	vector<double> x0 = sample_data(0, sqrt(3) / sqrt(x), x0_size);	
+	int iter = 6;
+	string printmode = "debug";
+
+	cout << "SAMPLED DATA" << endl;
+	printVector(x0, false);
+	cout << "#########################################################" << endl;
+
+	//params for ckks
+	int moduli = 60;
+	double scale = pow(2.0, 25);
+	size_t pmd = pow(2.0, 15);
+	ckks_build ckks(moduli, scale, pmd);
+
+	cout << "NEWTON METHOD" << endl;
+	Ciphertext result = newton_seal(x, x0, iter, printmode, ckks);
+	cout << "#########################################################" << endl;
+	cout << "GOLDSCHMIDT METHOD" << endl;
+	Ciphertext result2 = goldschmidt_seal(x, x0, iter, printmode, ckks);
+
+	//vector<double> res_ctxt = ckks.decode_ctxt(result);
+	//vector<double> res_error;
+	//res_ctxt.resize(x0.size());
+	//for(int i=0; i<x0_size; i++)
+	//{
+	//	res_error.push_back(abs(answer - res_ctxt[i]));
+	//}
+	//cout << "Decryption Result:" << endl;
+	//printVector(res_ctxt, false);
+	//cout << "--------------------------------" << endl;
+	//cout << "Error:" << endl;
+	//printVector_10eform(res_error, false);
+}
+
+
+void plain_compare() 
+{
 	double answer = 2.0;
 	double x0 = 1.0;
 	double err = 1e-4;

@@ -1,5 +1,4 @@
-#ifndef FUNCTION_SEAL_H
-#define FUNCTION_SEAL_H
+#pragma once
 
 #include "SEAL_VS.h"
 
@@ -9,4 +8,5 @@ Ciphertext sgn_seal(string mode, string scaleMode, Ciphertext& x, vector<double>
 Ciphertext abs_seal(string mode, string scaleMode, Ciphertext& x, vector<double>& poly, vector<double>& input, int d, int pre, ckks_build& ckks);
 Ciphertext max_seal(string mode, string scaleMode, Ciphertext& x, vector<double>& poly, vector<double>& input, int d, int pre, ckks_build& ckks);
 
-#endif // FUNCTION_SEAL_H
+Ciphertext newton_seal(double x, vector<double> x0, int iter, string printmode, ckks_build& ckks);
+Ciphertext goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, ckks_build& ckks);

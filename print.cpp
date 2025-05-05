@@ -66,3 +66,36 @@ void debug_print(string message, string mode)
     if (mode == "debug")
         cout << message << endl;
 }
+
+string toScientific(double num, int precision) 
+{
+    if (num == 0.0) {
+        return format("{:.{}f} * 10^{}", 0.0, precision, 0);
+    }
+
+    int exponent = static_cast<int>(floor(log10(abs(num))));
+    double a = num / pow(10, exponent);
+
+    return format("{:.{}f}e{}", a, precision, exponent);
+}
+
+void printVector_10eform(const vector<double>& coeffs, bool asFunction, int pre) 
+{
+    size_t size = coeffs.size();
+    for (size_t i = 0; i < size; i++) {
+        string sci = toScientific(coeffs[i], pre);
+        cout << sci;
+
+        if (asFunction) {
+            cout << "(x" << i << ")";
+        }
+
+        if (i != size - 1) {
+            if (asFunction)
+                cout << " + ";
+            else
+                cout << "\t";
+        }
+    }
+    cout << endl;
+}
