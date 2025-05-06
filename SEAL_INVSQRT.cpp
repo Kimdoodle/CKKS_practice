@@ -31,23 +31,10 @@ int main()
 	ckks_build ckks(moduli, scale, pmd);
 
 	cout << "NEWTON METHOD" << endl;
-	Ciphertext result = newton_seal(x, x0, iter, printmode, ckks);
+	//newton_seal(x, x0, iter, printmode, ckks);
 	cout << "#########################################################" << endl;
-	cout << "GOLDSCHMIDT METHOD" << endl;
-	Ciphertext result2 = goldschmidt_seal(x, x0, iter, printmode, ckks);
-
-	//vector<double> res_ctxt = ckks.decode_ctxt(result);
-	//vector<double> res_error;
-	//res_ctxt.resize(x0.size());
-	//for(int i=0; i<x0_size; i++)
-	//{
-	//	res_error.push_back(abs(answer - res_ctxt[i]));
-	//}
-	//cout << "Decryption Result:" << endl;
-	//printVector(res_ctxt, false);
-	//cout << "--------------------------------" << endl;
-	//cout << "Error:" << endl;
-	//printVector_10eform(res_error, false);
+	cout << "GOLDSCHMIDT METHOD(FHE)" << endl;
+	goldschmidt_seal(x, x0, iter, printmode, ckks);
 }
 
 

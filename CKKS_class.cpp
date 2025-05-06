@@ -228,6 +228,10 @@ void ckks_build::add(Plaintext& ptxt, Ciphertext& ctxt)
     //scale_equal(ptxt, ctxt);
     eva->add_plain_inplace(ctxt, ptxt);
 }
+void ckks_build::add(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination)
+{
+    eva->add_plain(ctxt, ptxt, destination);
+}
 
 // Multiply
 void ckks_build::mult(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& result, bool doRescale)
@@ -259,6 +263,12 @@ void ckks_build::mult(Plaintext& ptxt, Ciphertext& ctxt, bool doRescale)
         eva->rescale_to_next_inplace(ctxt);
 }
 
+void ckks_build::mult(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination, bool doRescale)
+{
+    eva->multiply_plain(ctxt, ptxt, destination);
+    if (doRescale)
+        eva->rescale_to_next_inplace(destination);
+}
 //square ciphertext.
 void ckks_build::square(Ciphertext& ctxt)
 {

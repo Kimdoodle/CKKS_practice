@@ -66,105 +66,68 @@ Ciphertext max_seal(string mode, string scaleMode, Ciphertext& x, vector<double>
 }
 
 // newton method
-Ciphertext newton_seal(double x, vector<double> x0, int iter, string printmode, ckks_build& ckks)
+void newton_seal(double x, vector<double> x0, int iter, string printmode, ckks_build& ckks)
 {
 	vector<double> y0 = x0;
 	Ciphertext y = ckks.encrypt(x0);
 
 	//iter newton method.
+	// y = 0.5y(3-xy^2)
 	Ciphertext term;
-	Plaintext cipher_x, plain_3, plain_05, dummy;
+	Plaintext encoded_x, plain_05, plain_10, plain_30;
 
 	for (int i = 0; i < iter; i++) {
 		debug_print(format("Iteration {}", i + 1), printmode);
 
 		ckks.mult(y, y, term, false); // y^2
 
-		cipher_x = ckks.encode((-1) * x, y);
-		ckks.mult(cipher_x, term, false); //-xy^2
+		encoded_x = ckks.encode((-1) * x, y);
+		ckks.mult(encoded_x, term, term, false); //-xy^2
 
-		plain_3 = ckks.encode(3.0, term);
-		ckks.add(plain_3, term);// 3+(-xy^2)
+		plain_30 = ckks.encode(3.0, term);
+		ckks.add(plain_30, term);// 3+(-xy^2)
 
-		plain_05 = ckks.encode(0.5, term, pow(2.0, 10));
-		ckks.mult(plain_05, term, true); // 0.5 * (3-xy^2)
+		plain_10 = ckks.encode(1.0, term, pow(2, 10));
+		ckks.mult(plain_10, term, true); // Rescale 3+(-xy^2)
+		
+		//if (printmode == "debug")
+		//{
+		//	vector<double> res_ctxt = ckks.decode_ctxt(term);
+		//	vector<double> res_ptxt = multVectors(x0, x0);
+		//	res_ptxt = multPlainPolynomial(res_ptxt, -x);
+		//	res_ptxt = addScalar(res_ptxt, 3);
+		//	res_ctxt.resize(res_ptxt.size());
+		//	cout << "decyrption result of 3-xy^2:" << endl;
+		//	printVector(res_ctxt, false);
+		//	cout << "Actual 3-xy^2:" << endl;
+		//	printVector(res_ptxt, false);
+		//}
 
-		ckks.mult(y, term, term, false);// 0.5 * y * (3-xy^2)
-		dummy = ckks.encode(1.0, term, pow(2.0, 35));
-		ckks.mult(dummy, term, true);
-
-		y = term;
-
-		int iteration_scale = int(log2(y.scale()));
+		int iteration_scale = int(log2(term.scale()));
 		if (iteration_scale != ckks.get_scale())
 		{
 			cout << "SCALE ERROR!!!" << endl;
 			cout << format("iteration scale: {}", iteration_scale) << endl;
 			cout << format("original scale: {}", ckks.get_scale()) << endl;
-			return term;
 		}
+		//###################################################
+		plain_05 = ckks.encode(0.5, term);
+		ckks.mult(plain_05, term, term, false); // 0.5 * (3-xy^2)
 
-		//error
-		if (printmode == "debug")
-		{
-			int size = x0.size();
-			vector<double> res_ctxt = ckks.decode_ctxt(term);
-			vector<double> res_error;
-			res_ctxt.resize(x0.size());
-			for (int i = 0; i < size; i++)
-			{
-				res_error.push_back(abs((1/sqrt(x)) - res_ctxt[i]));
-			}
-			cout << "Decryption Result:" << endl;
-			printVector(res_ctxt, false);
-			cout << "Error:" << endl;
-			printVector_10eform(res_error, false);
-			
-		}
+		ckks.mult(y, term, term, false);// 0.5 * y * (3-xy^2)
 
-		cout << format("Remain Level: {}", term.coeff_modulus_size()) << endl;
-		cout << "------------------------------" << endl;
-	}
-	
-	return term;
-}
+		plain_10 = ckks.encode(1.0, term, pow(2, 10));
+		ckks.mult(plain_10, term, true); // Rescale
 
-Ciphertext goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, ckks_build& ckks)
-{
-	vector<double> y0 = x0;
-	Ciphertext y = ckks.encrypt(x0);
+		y = term;
 
-	//iter goldschmidt method.
-	Plaintext cipher_x = ckks.encode((-1) * x, y);
-	Ciphertext h;
-	Plaintext plain_3, plain_05, dummy;
-	
-	//set initial y, g
-	ckks.mult(y, y, h, false);
-	ckks.mult(cipher_x, h, false);
-	plain_3 = ckks.encode(3.0, h);
-	ckks.add(plain_3, h);
-	plain_05 = ckks.encode(0.5, h, pow(2.0, 10));
-	ckks.mult(plain_05, h, true); //h0
-
-	for (int i = 0; i < iter; i++) {
-		debug_print(format("Iteration {}", i + 1), printmode);
-		
-		ckks.mult(y, h, y, false); // y_(n+1) = y_n * h_n
-		dummy = ckks.encode(1.0, y, pow(2.0, 35));
-		ckks.mult(dummy, y, true);
-
-		ckks.mult(h, h, h, false); // h_(n+1) = h_n * h_n
-		dummy = ckks.encode(1.0, h, pow(2.0, 35));
-		ckks.mult(dummy, h, true);
-
-		int iteration_scale = int(log2(y.scale()));
+		iteration_scale = int(log2(y.scale()));
 		if (iteration_scale != ckks.get_scale())
 		{
 			cout << "SCALE ERROR!!!" << endl;
-			return y;
+			cout << format("iteration scale: {}", iteration_scale) << endl;
+			cout << format("original scale: {}", ckks.get_scale()) << endl;
 		}
-
 		//error
 		if (printmode == "debug")
 		{
@@ -174,18 +137,141 @@ Ciphertext goldschmidt_seal(double x, vector<double> x0, int iter, string printm
 			res_ctxt.resize(x0.size());
 			for (int i = 0; i < size; i++)
 			{
-				res_error.push_back(abs((1 / sqrt(x)) - res_ctxt[i]));
+				res_error.push_back(abs((1/sqrt(x)) - res_ctxt[i]));
 			}
-			cout << "Decryption Result:" << endl;
+			cout << "Final decryption Result:" << endl;
 			printVector(res_ctxt, false);
 			cout << "Error:" << endl;
 			printVector_10eform(res_error, false);
-
+			
 		}
 
 		cout << format("Remain Level: {}", y.coeff_modulus_size()) << endl;
 		cout << "------------------------------" << endl;
 	}
+}
 
-	return y;
+void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, ckks_build& ckks)
+{
+
+	Ciphertext g, h, temp;
+	Plaintext encoded_x, plain_30, plain_05, plain_10;
+	vector<double> res_ctxt, res_ptxt_h(x0.size()), res_ptxt_g(x0.size()), res_error;
+	Ciphertext y = ckks.encrypt(x0);
+	vector<double> res_ptxt_y = x0;
+	int iteration_scale;
+
+	//set initial g = xy^2
+	ckks.mult(y, y, temp, false);
+	encoded_x = ckks.encode(x, temp, pow(2, 35));
+	ckks.mult(encoded_x, temp, g, true);
+	//error
+	if (printmode == "debug")
+	{
+		res_ctxt = ckks.decode_ctxt(g);
+		res_ctxt.resize(x0.size());
+		res_ptxt_g = multVectors(res_ptxt_y, res_ptxt_y);
+		res_ptxt_g = multPlainPolynomial(res_ptxt_g, x);
+		cout << "Decryption result g0:" << endl;
+		printVector(res_ctxt, false);
+		cout << "Actual calculation of g0:" << endl;
+		printVector(res_ptxt_g, false);
+		iteration_scale = int(log2(g.scale()));
+		if (iteration_scale != ckks.get_scale())
+		{
+			cout << "G0 SCALE ERROR!!!" << endl;
+			cout << format("iteration scale: {}", iteration_scale) << endl;
+			cout << format("original scale: {}", ckks.get_scale()) << endl;
+			return;
+		}
+	}
+
+	//iter goldschmidt method.
+	for (int i = 0; i < iter; i++) {
+		debug_print(format("Iteration {}", i + 1), printmode);
+
+		//calculate h = (3-g)/2 = (g-3)/(-2)
+		plain_30 = ckks.encode(-3.0, g);
+		ckks.add(plain_30, g, temp);
+		plain_05 = ckks.encode(-0.5, temp, pow(2, 60));
+		ckks.mult(plain_05, temp, h, true);
+		//error
+		if (printmode == "debug")
+		{
+			res_ctxt = ckks.decode_ctxt(h);
+			res_ctxt.resize(x0.size());
+			res_ptxt_h = addScalar(res_ptxt_g, -3);
+			res_ptxt_h = multPlainPolynomial(res_ptxt_h, -0.5);
+			cout << "Decryption Result of h:" << endl;
+			printVector(res_ctxt, false);
+			cout << "Actual calculation of h:" << endl;
+			printVector(res_ptxt_h, false);
+			iteration_scale = int(log2(h.scale()));
+			if (iteration_scale != ckks.get_scale())
+			{
+				cout << "H SCALE ERROR!!!" << endl;
+				cout << format("iteration scale: {}", iteration_scale) << endl;
+				cout << format("original scale: {}", ckks.get_scale()) << endl;
+				return;
+			}
+		}
+
+		//calculate g = gh^2
+		ckks.mult(h, h, temp, false);
+		ckks.mult(temp, g, temp, false);
+		plain_10 = ckks.encode(1.0, temp, pow(2, 10));
+		ckks.mult(plain_10, temp, g, true); // rescale
+		//error
+		if (printmode == "debug")
+		{
+			res_ctxt = ckks.decode_ctxt(g);
+			res_ctxt.resize(x0.size());
+			res_ptxt_h = multVectors(res_ptxt_h, res_ptxt_h);
+			res_ptxt_g = multVectors(res_ptxt_g, res_ptxt_h);
+			cout << "Decryption Result of g:" << endl;
+			printVector(res_ctxt, false);
+			cout << "Actual calculation of g:" << endl;
+			printVector(res_ptxt_g, false);
+			iteration_scale = int(log2(g.scale()));
+			if (iteration_scale != ckks.get_scale())
+			{
+				cout << "G SCALE ERROR!!!" << endl;
+				cout << format("iteration scale: {}", iteration_scale) << endl;
+				cout << format("original scale: {}", ckks.get_scale()) << endl;
+				return;
+			}
+		}
+
+		//calculate y = y * h
+		ckks.mult(y, h, y, false);
+		plain_10 = ckks.encode(1.0, y, pow(2.0, 35));
+		ckks.mult(plain_10, y, true); // rescale
+		//error
+		if (printmode == "debug")
+		{
+			res_ctxt = ckks.decode_ctxt(y);
+			res_ctxt.resize(x0.size());
+			cout << "Decryption Result of y:" << endl;
+			printVector(res_ctxt, false);
+
+			res_ptxt_y = multVectors(res_ptxt_h, res_ptxt_y);
+			res_ctxt = multPlainPolynomial(res_ctxt, -1);
+			res_error = addVectors(res_ctxt, res_ptxt_y);
+			cout << "Actual calculation of y:" << endl;
+			printVector(res_ptxt_y, false);
+			cout << "Error:" << endl;
+			printVector_10eform(res_error, false);
+			iteration_scale = int(log2(y.scale()));
+			if (iteration_scale != ckks.get_scale())
+			{
+				cout << "Y SCALE ERROR!!!" << endl;
+				cout << format("iteration scale: {}", iteration_scale) << endl;
+				cout << format("original scale: {}", ckks.get_scale()) << endl;
+				return;
+			}
+		}
+
+		cout << format("Remain Level: {}", y.coeff_modulus_size()) << endl;
+		cout << "------------------------------" << endl;
+	}
 }

@@ -309,11 +309,11 @@ double compute_h(double p, double x, int dg, int df, vector<double> L1, vector<d
 }
 
 
-int newton_algorithm(double x, double x0, double err, int iter, string printmode)
+int newton_algorithm(double x, vector<double> x0, double err, int iter, string printmode)
 {
     debug_print(format("Initial X: \t{}", x), printmode);
     double answer = 1 / sqrt(x);
-    double  y0 = x0;
+    vector<double>  y0 = x0;
     double error = abs(answer - y0);
     debug_print(format("y0:\t{}", y0), printmode);
     for (int i = 1; i <= iter; i++) 

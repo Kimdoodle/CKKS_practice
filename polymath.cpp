@@ -57,6 +57,70 @@ vector<double> multPlainPolynomial(vector<double>& v, double scalar)
         result[i] = scalar * v[i];
     return result;
 }
+vector<double> multScalar(vector<double>& v, double scalar)
+{
+    vector<double> result(v.size());
+    for (int i = 0; i < v.size(); i++)
+        result[i] = scalar * v[i];
+    return result;
+}
+
+//add scalar to vector element-wise.
+vector<double> addScalar(vector<double>& a, double scalar)
+{
+    vector<double> result(a.size());
+    for (int i = 0; i < a.size(); i++) {
+        result[i] = a[i] + scalar;
+    }
+    return result;
+}
+
+//add two vectors element-wise.
+vector<double> addVectors(vector<double>& a, vector<double>& b)
+{
+    vector<double> result(a.size());
+    for (int i = 0; i < a.size(); i++) {
+        result[i] = a[i] + b[i];
+    }
+    return result;
+}
+
+//multiply two vectors element-wise.
+vector<double> multVectors(vector<double>& a, vector<double>& b)
+{
+    vector<double> result(a.size());
+    for (int i = 0; i < a.size(); i++) {
+        result[i] = a[i] * b[i];
+    }
+    return result;
+}
+
+vector<double> subScalar(vector<double>& a, double scalar)
+{
+    vector<double> result(a.size());
+    for (int i = 0; i < a.size(); i++) {
+        result[i] = a[i] - scalar;
+    }
+    return result;
+}
+
+vector<double> subVectors(vector<double>& a, vector<double>& b)
+{
+    vector<double> result(a.size());
+    for (int i = 0; i < a.size(); i++) {
+        result[i] = a[i] - b[i];
+    }
+    return result;
+}
+
+vector<double> absVectors(vector<double>& a)
+{
+    vector<double> result(a.size());
+    for (int i = 0; i < a.size(); i++) {
+        result[i] = abs(a[i]);
+    }
+    return result;
+}
 
 /*
     ?�항??곱셈???�한 계수 벡터 ?�성

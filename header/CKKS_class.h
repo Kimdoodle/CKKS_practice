@@ -47,9 +47,11 @@ public:
     void add(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& result);
     void add(Ciphertext& ctxt1, Ciphertext& ctxt2);
     void add(Plaintext& ptxt, Ciphertext& ctxt);
+    void add(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination);
     void mult(Ciphertext& ctxt1, Ciphertext& ctxt2, Ciphertext& result, bool doRescale=true);
     void mult(Ciphertext& ctxt1, Ciphertext& ctxt2, bool doRescale = true);
     void mult(Plaintext& ptxt, Ciphertext& ctxt, bool doRescale = true);
+    void mult(Plaintext& ptxt, Ciphertext& ctxt, Ciphertext& destination, bool doRescale=true);
     void square(Ciphertext& ctxt);
 
     Ciphertext exp(const Ciphertext& x, int d);
