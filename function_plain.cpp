@@ -309,62 +309,62 @@ double compute_h(double p, double x, int dg, int df, vector<double> L1, vector<d
 }
 
 
-int newton_algorithm(double x, vector<double> x0, double err, int iter, string printmode)
+vector<double> newton_algorithm(double x, vector<double> x0)
 {
-    debug_print(format("Initial X: \t{}", x), printmode);
     double answer = 1 / sqrt(x);
     vector<double>  y0 = x0;
-    double error = abs(answer - y0);
-    debug_print(format("y0:\t{}", y0), printmode);
-    for (int i = 1; i <= iter; i++) 
-    {
-        y0 = newton(x, y0); // 0.5 * y * (3 - (x * y * y));
-        debug_print(format("y{}:\t{}", i, y0), printmode);
-        error = abs(answer - y0);
-        if (error <= err)
-        {
-            debug_print(format("Approximation success. Error: {}", error), printmode);
-            return i;
-        }
-    }
-    if (error > err)
-    {
-        debug_print(format("Approximation failed. Error: {}", error), printmode);
-    }
-    return -1;
+    vector<double> error = subScalar(y0, answer);
+    error = absVectors(error);
+    vector<double> temp;
+
+    // 0.5 * y0 * (3 - (x * y0 * y0));
+    temp = multVectors(y0, y0);
+    temp = multScalar(temp, -x);
+    temp = addScalar(temp, 3);
+    temp = multVectors(temp, y0);
+    y0 = multScalar(temp, 0.5);
+
+    //error = subScalar(y0, answer);
+    //error = absVectors(error);
+    //for (int i=0; i<error.size(); i++)
+    //{
+    //    if (error[i] <= err)
+    //        debug_print(format("Approximation success x[{}]", i), printmode);
+    //    else
+    //        debug_print(format("Approximation ongoing x[{}], Error: {}", i, error[i]), printmode);
+    //}
+    return y0;
 }
 
-int goldschmidt_algorithm(double x, double x0, double err, int iter, string printmode)
+void goldschmidt_algorithm(double x, vector<double>& y, vector<double>& g, vector<double>& h)
 {
-    debug_print(format("Initial X: \t{}", x), printmode);
-    double answer = 1.0 / sqrt(x);
-    double y = x0;
-    double g = x * y * y;
-    double error = abs(answer - y);
+    vector<double> temp;
 
-    debug_print(format("y0:\t{}", y), printmode);
+    //temp = multVectors(y, y);
+    //g = multScalar(temp, x); // g=x*y*y
 
-    for (int i = 1; i <= iter; i++)
-    {
-        double h = (3.0 - g) / 2.0;
-        g = g * h * h;
-        y = y * h;
+    temp = subScalar(g, 3);
+    h = multScalar(temp, -0.5); //h=(3.0-g)/2
+    
+    y = multVectors(y, h); // y = y*h
 
-        debug_print(format("y{}:\t{}", i, y), printmode);
+    temp = multVectors(h, h);
+    g = multVectors(g, temp); // g = g * h * h
+    
+    return;
 
-        error = abs(answer - y);
-        if (error <= err)
-        {
-            debug_print(format("Approximation success. Error: {}", error), printmode);
-            return i;
-        }
-    }
-
-    if (error > err)
-    {
-        debug_print(format("Approximation failed. Error: {}", error), printmode);
-    }
-    return -1;
+    //debug_print(format("y{}:\t{}", i, y), printmode);
+    //error = abs(answer - y);
+    //if (error <= err)
+    //{
+    //    debug_print(format("Approximation success. Error: {}", error), printmode);
+    //    return i;
+    //}
+    //if (error > err)
+    //{
+    //    debug_print(format("Approximation failed. Error: {}", error), printmode);
+    //}
+    //return -1;
 }
 
 void newton_goodGuess(double x, double a, double b, double delta, double err, int iter, string printmode)

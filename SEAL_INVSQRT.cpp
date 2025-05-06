@@ -1,5 +1,5 @@
 ﻿#include "header/SEAL_VS.h"
-void plain_compare();
+//void plain_compare();
 
 /*
 	Todo
@@ -15,9 +15,10 @@ int main()
 	double err = 1e-4;
 	double x = 2.0;
 	double answer = 1 / sqrt(x);
-	int x0_size = 5;
+	int x0_size = 10;
 	vector<double> x0 = sample_data(0, sqrt(3) / sqrt(x), x0_size);	
-	int iter = 6;
+	//vector<double> x0 = sample_data(0, 2, x0_size);	
+	int iter = 5;
 	string printmode = "debug";
 
 	cout << "SAMPLED DATA" << endl;
@@ -31,47 +32,48 @@ int main()
 	ckks_build ckks(moduli, scale, pmd);
 
 	cout << "NEWTON METHOD" << endl;
-	//newton_seal(x, x0, iter, printmode, ckks);
+	newton_seal(x, x0, iter, printmode, ckks);
 	cout << "#########################################################" << endl;
 	cout << "GOLDSCHMIDT METHOD(FHE)" << endl;
 	goldschmidt_seal(x, x0, iter, printmode, ckks);
 }
 
 
-void plain_compare() 
-{
-	double answer = 2.0;
-	double x0 = 1.0;
-	double err = 1e-4;
-	double iter = 9;
-	string printmode = "normal";
+//void plain_compare() 
+//{
+//	double answer = 2.0;
+//	double x0 = 1.0;
+//	double err = 1e-4;
+//	double iter = 9;
+//	string printmode = "normal";
+//
+//	int suc_new;
+//	int suc_gold;
+//	int new_adv = 0;
+//	int gold_adv = 0;
+//	for (double a = 1e-5; a <= 1e4; a += 1e-5)
+//	{
+//		suc_new = newton_algorithm(answer, x0, err, iter, printmode);
+//		suc_gold = goldschmidt_algorithm(answer, x0, err, iter, printmode);
+//		if (suc_new == -1 && suc_gold != -1)
+//		{
+//			cout << format("X: {}", a) << endl;
+//			cout << format("Newton failed.\t Goldschmidt success. Iter: {}", suc_gold) << endl;
+//		}
+//		else if (suc_new != -1 && suc_gold == -1)
+//		{
+//			cout << format("X: {}", a) << endl;
+//			cout << format("Newton success. Iter: {}.\t Goldschmidt failed.", suc_new) << endl;
+//		}
+//		else if (suc_new > suc_gold)
+//			new_adv++;
+//		else if (suc_new < suc_gold)
+//			gold_adv++;
+//	}
+//	cout << format("Newton advantage: {} times", new_adv) << endl;
+//	cout << format("Goldschmidt advantage: {} times", gold_adv) << endl;
+//}
 
-	int suc_new;
-	int suc_gold;
-	int new_adv = 0;
-	int gold_adv = 0;
-	for (double a = 1e-5; a <= 1e4; a += 1e-5)
-	{
-		suc_new = newton_algorithm(answer, x0, err, iter, printmode);
-		suc_gold = goldschmidt_algorithm(answer, x0, err, iter, printmode);
-		if (suc_new == -1 && suc_gold != -1)
-		{
-			cout << format("X: {}", a) << endl;
-			cout << format("Newton failed.\t Goldschmidt success. Iter: {}", suc_gold) << endl;
-		}
-		else if (suc_new != -1 && suc_gold == -1)
-		{
-			cout << format("X: {}", a) << endl;
-			cout << format("Newton success. Iter: {}.\t Goldschmidt failed.", suc_new) << endl;
-		}
-		else if (suc_new > suc_gold)
-			new_adv++;
-		else if (suc_new < suc_gold)
-			gold_adv++;
-	}
-	cout << format("Newton advantage: {} times", new_adv) << endl;
-	cout << format("Goldschmidt advantage: {} times", gold_adv) << endl;
-}
 //int main()
 //{
 //	// param settings

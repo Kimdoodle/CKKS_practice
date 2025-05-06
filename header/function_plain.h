@@ -26,6 +26,6 @@ double approx_sign(double x, int dg, int df);
 double approx_comp(double a, double b, int dg, int df);
 double compute_h(double p, double x, int dg, int df, vector<double> L1, vector<double> L2);
 
-int newton_algorithm(double x, double x0, double err, int iter, string printmode);
-int goldschmidt_algorithm(double x, double x0, double err, int iter, string printmode);
+vector<double> newton_algorithm(double x, vector<double> x0);
+void goldschmidt_algorithm(double x, vector<double>& y, vector<double>& g, vector<double>& h);
 void newton_goodGuess(double x, double a, double b, double delta, double err, int iter, string printmode);

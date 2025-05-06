@@ -1,6 +1,6 @@
 #include "header/SEAL_VS.h"
 
-// ?�토리얼
+// factorial
 int factorial(int a, int b) {
     int res = 1;
     for(int i=a; i>b; i--)
@@ -8,12 +8,12 @@ int factorial(int a, int b) {
     return res;
 }
 
-//밑이 2??로그
+//log(base=2)
 double log2(double x, double base) {
     return log(x)/log(base);
 }
 
-// 미분
+//differentiate coeff vector
 vector<double> differentiate(vector<double> poly)
 {
     vector<double> result;
@@ -41,7 +41,7 @@ vector<double> sample_data(double min, double max, int iter)
     return samples;
 }
 
-//?�정 값을 size만큼 복제??벡터 ?�성
+//duplicate vector, 
 vector<double> duplicate_vector(double input, int size)
 {
     vector<double> res;
@@ -123,9 +123,9 @@ vector<double> absVectors(vector<double>& a)
 }
 
 /*
-    ?�항??곱셈???�한 계수 벡터 ?�성
-    1. Toeplitz ?�렬???�성
-    2. ?�렬 * 벡터 결과�?반환
+    ?�항??곱셈???�한 계수 벡터 ?�성
+    1. Toeplitz ?�렬???�성
+    2. ?�렬 * 벡터 결과�?반환
 */
 vector<vector<double>> createToeplitzMatrix(const vector<double>& coeffs, int result_size) {
     vector<vector<double>> T(result_size, vector<double>(result_size, 0));
@@ -140,7 +140,7 @@ vector<vector<double>> createToeplitzMatrix(const vector<double>& coeffs, int re
     return T;
 }
 
-// ?�렬�?벡터??�?
+// ?�렬�?벡터??�?
 vector<double> multiplyMatrixVector(const vector<vector<double>>& matrix, const vector<double>& vec) {
     size_t size = matrix.size();
     vector<double> result(size, 0);
@@ -155,7 +155,7 @@ vector<double> multiplyMatrixVector(const vector<vector<double>>& matrix, const 
 }
 
 
-// ?�항??곱셈 ?�수
+// ?�항??곱셈 ?�수
 vector<double> multPolynomial(const vector<double>& a, const vector<double>& b) {
     int result_size = static_cast<int>(a.size() + b.size() - 1);
     vector<vector<double>> T = createToeplitzMatrix(a, result_size);
@@ -168,7 +168,7 @@ vector<double> multPolynomial(const vector<double>& a, const vector<double>& b) 
     return multiplyMatrixVector(T, extended_b);
 }
 
-// ?�항??거듭?�곱 ?�수
+// ?�항??거듭?�곱 ?�수
 vector<double> powerPolynomial(const vector<double>& poly, int exponent) {
     vector<double> result = {1};
 
@@ -207,7 +207,7 @@ vector<double> polypolyEvaluate(const vector<double>& poly, vector<double>& inpu
     return result;
 }
 
-// (x,y)?�들�??�항?�을 계산?�는 ?�수(?�그?�주 ?�항??
+// (x,y)?�들�??�항?�을 계산?�는 ?�수(?�그?�주 ?�항??
 vector<double> calculatePoly(const vector<double>& x, const vector<double>& y) {
     int n = x.size();
     vector<double> result(n, 0.0);
@@ -229,7 +229,7 @@ vector<double> calculatePoly(const vector<double>& x, const vector<double>& y) {
 
         term = multPlainPolynomial(term, yi / denominator); // y_i / L_i(xi)
 
-        // 결과 ?�항?�에 ?�하�?
+        // 결과 ?�항?�에 ?�하�?
         for (int k = 0; k < term.size(); ++k) {
             result[k] += term[k];
         }

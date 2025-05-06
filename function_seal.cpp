@@ -68,7 +68,7 @@ Ciphertext max_seal(string mode, string scaleMode, Ciphertext& x, vector<double>
 // newton method
 void newton_seal(double x, vector<double> x0, int iter, string printmode, ckks_build& ckks)
 {
-	vector<double> y0 = x0;
+	vector<double> plain_y = x0;
 	Ciphertext y = ckks.encrypt(x0);
 
 	//iter newton method.
@@ -121,6 +121,23 @@ void newton_seal(double x, vector<double> x0, int iter, string printmode, ckks_b
 
 		y = term;
 
+		//error
+		if (printmode == "debug")
+		{
+			int size = x0.size();
+			vector<double> res_ctxt = ckks.decode_ctxt(y);
+			res_ctxt.resize(x0.size());
+			plain_y = newton_algorithm(x, plain_y);
+			vector<double> res_error = subVectors(res_ctxt, plain_y);
+
+			cout << "Decryption Result:" << endl;
+			printVector(res_ctxt, false);
+			cout << "Actual calculation result:" << endl;
+			printVector(plain_y, false);
+			cout << "Error:" << endl;
+			printVector_10eform(res_error, false);
+		}
+
 		iteration_scale = int(log2(y.scale()));
 		if (iteration_scale != ckks.get_scale())
 		{
@@ -128,23 +145,7 @@ void newton_seal(double x, vector<double> x0, int iter, string printmode, ckks_b
 			cout << format("iteration scale: {}", iteration_scale) << endl;
 			cout << format("original scale: {}", ckks.get_scale()) << endl;
 		}
-		//error
-		if (printmode == "debug")
-		{
-			int size = x0.size();
-			vector<double> res_ctxt = ckks.decode_ctxt(y);
-			vector<double> res_error;
-			res_ctxt.resize(x0.size());
-			for (int i = 0; i < size; i++)
-			{
-				res_error.push_back(abs((1/sqrt(x)) - res_ctxt[i]));
-			}
-			cout << "Final decryption Result:" << endl;
-			printVector(res_ctxt, false);
-			cout << "Error:" << endl;
-			printVector_10eform(res_error, false);
-			
-		}
+		
 
 		cout << format("Remain Level: {}", y.coeff_modulus_size()) << endl;
 		cout << "------------------------------" << endl;
@@ -156,9 +157,11 @@ void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, c
 
 	Ciphertext g, h, temp;
 	Plaintext encoded_x, plain_30, plain_05, plain_10;
-	vector<double> res_ctxt, res_ptxt_h(x0.size()), res_ptxt_g(x0.size()), res_error;
+	vector<double> res_ctxt;
+	vector<double> res_h, res_y, res_g, res_err;
 	Ciphertext y = ckks.encrypt(x0);
-	vector<double> res_ptxt_y = x0;
+
+	res_y = x0;
 	int iteration_scale;
 
 	//set initial g = xy^2
@@ -170,12 +173,12 @@ void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, c
 	{
 		res_ctxt = ckks.decode_ctxt(g);
 		res_ctxt.resize(x0.size());
-		res_ptxt_g = multVectors(res_ptxt_y, res_ptxt_y);
-		res_ptxt_g = multPlainPolynomial(res_ptxt_g, x);
+		res_g = multVectors(res_y, res_y);
+		res_g = multScalar(res_g, x);
 		cout << "Decryption result g0:" << endl;
 		printVector(res_ctxt, false);
 		cout << "Actual calculation of g0:" << endl;
-		printVector(res_ptxt_g, false);
+		printVector(res_g, false);
 		iteration_scale = int(log2(g.scale()));
 		if (iteration_scale != ckks.get_scale())
 		{
@@ -185,10 +188,17 @@ void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, c
 			return;
 		}
 	}
+	cout << "------------------------------" << endl;
 
 	//iter goldschmidt method.
 	for (int i = 0; i < iter; i++) {
 		debug_print(format("Iteration {}", i + 1), printmode);
+
+		//calculate with plain data
+		if (printmode == "debug")
+		{
+			goldschmidt_algorithm(x, res_y, res_g, res_h);
+		}
 
 		//calculate h = (3-g)/2 = (g-3)/(-2)
 		plain_30 = ckks.encode(-3.0, g);
@@ -200,12 +210,10 @@ void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, c
 		{
 			res_ctxt = ckks.decode_ctxt(h);
 			res_ctxt.resize(x0.size());
-			res_ptxt_h = addScalar(res_ptxt_g, -3);
-			res_ptxt_h = multPlainPolynomial(res_ptxt_h, -0.5);
 			cout << "Decryption Result of h:" << endl;
 			printVector(res_ctxt, false);
 			cout << "Actual calculation of h:" << endl;
-			printVector(res_ptxt_h, false);
+			printVector(res_h, false);
 			iteration_scale = int(log2(h.scale()));
 			if (iteration_scale != ckks.get_scale())
 			{
@@ -214,6 +222,7 @@ void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, c
 				cout << format("original scale: {}", ckks.get_scale()) << endl;
 				return;
 			}
+			cout << "--------" << endl;
 		}
 
 		//calculate g = gh^2
@@ -226,12 +235,10 @@ void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, c
 		{
 			res_ctxt = ckks.decode_ctxt(g);
 			res_ctxt.resize(x0.size());
-			res_ptxt_h = multVectors(res_ptxt_h, res_ptxt_h);
-			res_ptxt_g = multVectors(res_ptxt_g, res_ptxt_h);
 			cout << "Decryption Result of g:" << endl;
 			printVector(res_ctxt, false);
 			cout << "Actual calculation of g:" << endl;
-			printVector(res_ptxt_g, false);
+			printVector(res_g, false);
 			iteration_scale = int(log2(g.scale()));
 			if (iteration_scale != ckks.get_scale())
 			{
@@ -240,6 +247,7 @@ void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, c
 				cout << format("original scale: {}", ckks.get_scale()) << endl;
 				return;
 			}
+			cout << "--------" << endl;
 		}
 
 		//calculate y = y * h
@@ -253,14 +261,12 @@ void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, c
 			res_ctxt.resize(x0.size());
 			cout << "Decryption Result of y:" << endl;
 			printVector(res_ctxt, false);
-
-			res_ptxt_y = multVectors(res_ptxt_h, res_ptxt_y);
-			res_ctxt = multPlainPolynomial(res_ctxt, -1);
-			res_error = addVectors(res_ctxt, res_ptxt_y);
+			res_err = subVectors(res_ctxt, res_y);
+			res_err = absVectors(res_err);
 			cout << "Actual calculation of y:" << endl;
-			printVector(res_ptxt_y, false);
+			printVector(res_y, false);
 			cout << "Error:" << endl;
-			printVector_10eform(res_error, false);
+			printVector_10eform(res_err, false);
 			iteration_scale = int(log2(y.scale()));
 			if (iteration_scale != ckks.get_scale())
 			{
@@ -269,6 +275,7 @@ void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, c
 				cout << format("original scale: {}", ckks.get_scale()) << endl;
 				return;
 			}
+			cout << "--------" << endl;
 		}
 
 		cout << format("Remain Level: {}", y.coeff_modulus_size()) << endl;
