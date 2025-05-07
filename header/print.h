@@ -9,3 +9,4 @@ void printStep(vector<double>& realValue, vector<double>& poly, vector<double>& 
 void debug_print(string message, string mode);
 string toScientific(double num, int precision);
 void printVector_10eform(const vector<double>& coeffs, bool asFunction, int pre=4);
+void printVector_OX(vector<double> err, double crit);

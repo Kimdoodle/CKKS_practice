@@ -338,6 +338,13 @@ vector<double> newton_algorithm(double x, vector<double> x0)
 
 void goldschmidt_algorithm(double x, vector<double>& y, vector<double>& g, vector<double>& h)
 {
+    if (y.size() != g.size() || g.size() != h.size())
+    {
+        cout << "VECTOR SIZE ERROR!!!" << endl;
+        cout << y.size() << endl;
+        cout << g.size() << endl;
+        cout << h.size() << endl;
+    }
     vector<double> temp;
 
     //temp = multVectors(y, y);

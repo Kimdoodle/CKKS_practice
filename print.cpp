@@ -99,3 +99,15 @@ void printVector_10eform(const vector<double>& coeffs, bool asFunction, int pre)
     }
     cout << endl;
 }
+
+void printVector_OX(vector<double> err, double crit)
+{
+    for (int i = 0; i < err.size(); i++)
+    {
+        if (err[i] <= crit)
+            cout << "O\t";
+        else
+            cout << "X\t";
+    }
+    cout << endl;
+}

@@ -68,6 +68,7 @@ Ciphertext max_seal(string mode, string scaleMode, Ciphertext& x, vector<double>
 // newton method
 void newton_seal(double x, vector<double> x0, int iter, string printmode, ckks_build& ckks)
 {
+	vector<double> res_ctxt;
 	vector<double> plain_y = x0;
 	Ciphertext y = ckks.encrypt(x0);
 
@@ -125,44 +126,59 @@ void newton_seal(double x, vector<double> x0, int iter, string printmode, ckks_b
 		if (printmode == "debug")
 		{
 			int size = x0.size();
-			vector<double> res_ctxt = ckks.decode_ctxt(y);
+			res_ctxt = ckks.decode_ctxt(y);
 			res_ctxt.resize(x0.size());
 			plain_y = newton_algorithm(x, plain_y);
 			vector<double> res_error = subVectors(res_ctxt, plain_y);
 			vector<double> res_real_error = subScalar(res_ctxt, 1 / sqrt(x));
 			res_real_error = absVectors(res_real_error);
 
-			cout << "Decryption Result:" << endl;
-			printVector(res_ctxt, false);
-			cout << "Actual calculation result:" << endl;
-			printVector(plain_y, false);
-			cout << "Error:" << endl;
-			printVector_10eform(res_error, false);
-			cout << "Error(with real invsqrt):" << endl;
-			printVector_10eform(res_real_error, false);
+			//cout << "Decryption Result:" << endl;
+			//printVector(res_ctxt, false);
+			//cout << "Actual calculation result:" << endl;
+			//printVector(plain_y, false);
+			//cout << "Error:" << endl;
+			//printVector_10eform(res_error, false);
+			//cout << "Error(with real invsqrt):" << endl;
+			//printVector_10eform(res_real_error, false);
+			cout << "Approximate success?(Plaintext).. \t";
+			vector<double> res_err_plain = subScalar(plain_y, 1 / sqrt(x));
+			res_err_plain = absVectors(res_err_plain);
+			printVector_OX(res_err_plain, 1e-4);
+			cout << "Approximate success?(Ciphertext)\t";
+			printVector_OX(res_real_error, 1e-4);
 		}
 
-		iteration_scale = int(log2(y.scale()));
-		if (iteration_scale != ckks.get_scale())
-		{
-			cout << "SCALE ERROR!!!" << endl;
-			cout << format("iteration scale: {}", iteration_scale) << endl;
-			cout << format("original scale: {}", ckks.get_scale()) << endl;
-		}
+		//iteration_scale = int(log2(y.scale()));
+		//if (iteration_scale != ckks.get_scale())
+		//{
+		//	cout << "SCALE ERROR!!!" << endl;
+		//	cout << format("iteration scale: {}", iteration_scale) << endl;
+		//	cout << format("original scale: {}", ckks.get_scale()) << endl;
+		//}
 		
 
 		cout << format("Remain Level: {}", y.coeff_modulus_size()) << endl;
 		cout << "------------------------------" << endl;
+
+		//zzap-bootstrapping
+		if (y.coeff_modulus_size() == 1 && i != iter-1)
+		{
+			cout << "Re-encrypting..." << endl;
+			y = ckks.encrypt(res_ctxt);
+			cout << "------------------------------" << endl;
+		}
 	}
 }
 
+//goldschmidt algorithm
 void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, ckks_build& ckks)
 {
 
 	Ciphertext g, h, temp;
 	Plaintext encoded_x, plain_30, plain_05, plain_10;
 	vector<double> res_ctxt;
-	vector<double> res_h, res_y, res_g, res_err;
+	vector<double> res_h(x0.size()), res_y, res_g(x0.size()), res_err, res_real_err;
 	Ciphertext y = ckks.encrypt(x0);
 
 	res_y = x0;
@@ -179,18 +195,18 @@ void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, c
 		res_ctxt.resize(x0.size());
 		res_g = multVectors(res_y, res_y);
 		res_g = multScalar(res_g, x);
-		cout << "Decryption result g0:" << endl;
-		printVector(res_ctxt, false);
-		cout << "Actual calculation of g0:" << endl;
-		printVector(res_g, false);
-		iteration_scale = int(log2(g.scale()));
-		if (iteration_scale != ckks.get_scale())
-		{
-			cout << "G0 SCALE ERROR!!!" << endl;
-			cout << format("iteration scale: {}", iteration_scale) << endl;
-			cout << format("original scale: {}", ckks.get_scale()) << endl;
-			return;
-		}
+		//cout << "Decryption result g0:" << endl;
+		//printVector(res_ctxt, false);
+		//cout << "Actual calculation of g0:" << endl;
+		//printVector(res_g, false);
+		//iteration_scale = int(log2(g.scale()));
+		//if (iteration_scale != ckks.get_scale())
+		//{
+		//	cout << "G0 SCALE ERROR!!!" << endl;
+		//	cout << format("iteration scale: {}", iteration_scale) << endl;
+		//	cout << format("original scale: {}", ckks.get_scale()) << endl;
+		//	return;
+		//}
 	}
 	cout << "------------------------------" << endl;
 
@@ -210,24 +226,24 @@ void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, c
 		plain_05 = ckks.encode(-0.5, temp, pow(2, 60));
 		ckks.mult(plain_05, temp, h, true);
 		//error
-		if (printmode == "debug")
-		{
-			res_ctxt = ckks.decode_ctxt(h);
-			res_ctxt.resize(x0.size());
-			cout << "Decryption Result of h:" << endl;
-			printVector(res_ctxt, false);
-			cout << "Actual calculation of h:" << endl;
-			printVector(res_h, false);
-			iteration_scale = int(log2(h.scale()));
-			if (iteration_scale != ckks.get_scale())
-			{
-				cout << "H SCALE ERROR!!!" << endl;
-				cout << format("iteration scale: {}", iteration_scale) << endl;
-				cout << format("original scale: {}", ckks.get_scale()) << endl;
-				return;
-			}
-			cout << "--------" << endl;
-		}
+		//if (printmode == "debug")
+		//{
+		//	res_ctxt = ckks.decode_ctxt(h);
+		//	res_ctxt.resize(x0.size());
+		//	cout << "Decryption Result of h:" << endl;
+		//	printVector(res_ctxt, false);
+		//	cout << "Actual calculation of h:" << endl;
+		//	printVector(res_h, false);
+		//	iteration_scale = int(log2(h.scale()));
+		//	if (iteration_scale != ckks.get_scale())
+		//	{
+		//		cout << "H SCALE ERROR!!!" << endl;
+		//		cout << format("iteration scale: {}", iteration_scale) << endl;
+		//		cout << format("original scale: {}", ckks.get_scale()) << endl;
+		//		return;
+		//	}
+		//	cout << "--------" << endl;
+		//}
 
 		//calculate g = gh^2
 		ckks.mult(h, h, temp, false);
@@ -235,24 +251,24 @@ void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, c
 		plain_10 = ckks.encode(1.0, temp, pow(2, 10));
 		ckks.mult(plain_10, temp, g, true); // rescale
 		//error
-		if (printmode == "debug")
-		{
-			res_ctxt = ckks.decode_ctxt(g);
-			res_ctxt.resize(x0.size());
-			cout << "Decryption Result of g:" << endl;
-			printVector(res_ctxt, false);
-			cout << "Actual calculation of g:" << endl;
-			printVector(res_g, false);
-			iteration_scale = int(log2(g.scale()));
-			if (iteration_scale != ckks.get_scale())
-			{
-				cout << "G SCALE ERROR!!!" << endl;
-				cout << format("iteration scale: {}", iteration_scale) << endl;
-				cout << format("original scale: {}", ckks.get_scale()) << endl;
-				return;
-			}
-			cout << "--------" << endl;
-		}
+		//if (printmode == "debug")
+		//{
+		//	res_ctxt = ckks.decode_ctxt(g);
+		//	res_ctxt.resize(x0.size());
+		//	cout << "Decryption Result of g:" << endl;
+		//	printVector(res_ctxt, false);
+		//	cout << "Actual calculation of g:" << endl;
+		//	printVector(res_g, false);
+		//	iteration_scale = int(log2(g.scale()));
+		//	if (iteration_scale != ckks.get_scale())
+		//	{
+		//		cout << "G SCALE ERROR!!!" << endl;
+		//		cout << format("iteration scale: {}", iteration_scale) << endl;
+		//		cout << format("original scale: {}", ckks.get_scale()) << endl;
+		//		return;
+		//	}
+		//	cout << "--------" << endl;
+		//}
 
 		//calculate y = y * h
 		ckks.mult(y, h, y, false);
@@ -263,14 +279,25 @@ void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, c
 		{
 			res_ctxt = ckks.decode_ctxt(y);
 			res_ctxt.resize(x0.size());
-			cout << "Decryption Result of y:" << endl;
-			printVector(res_ctxt, false);
 			res_err = subVectors(res_ctxt, res_y);
 			res_err = absVectors(res_err);
-			cout << "Actual calculation of y:" << endl;
-			printVector(res_y, false);
-			cout << "Error:" << endl;
-			printVector_10eform(res_err, false);
+			res_real_err = subScalar(res_ctxt, 1/sqrt(x));
+			res_real_err = absVectors(res_real_err);
+
+			//cout << "Decryption Result of y:" << endl;
+			//printVector(res_ctxt, false);
+			//cout << "Actual calculation of y:" << endl;
+			//printVector(res_y, false);
+			//cout << "Error:" << endl;
+			//printVector_10eform(res_err, false);
+			//cout << "Error(with real invsqrt):" << endl;
+			//printVector_10eform(res_real_err, false);
+			cout << "Approximate success?(Plaintext).. \t";
+			vector<double> res_err_plain = subScalar(res_y, 1 / sqrt(x));
+			res_err_plain = absVectors(res_err_plain);
+			printVector_OX(res_err_plain, 1e-4);
+			cout << "Approximate success?(Ciphertext)\t";
+			printVector_OX(res_real_err, 1e-4);
 			iteration_scale = int(log2(y.scale()));
 			if (iteration_scale != ckks.get_scale())
 			{
@@ -284,11 +311,36 @@ void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, c
 
 		cout << format("Remain Level: {}", y.coeff_modulus_size()) << endl;
 		cout << "------------------------------" << endl;
+
+		//zzap-bootstrapping
+		if (y.coeff_modulus_size() <= 2 && i != iter - 1)
+		{
+			cout << "Re-encrypting..." << endl;
+			y = ckks.encrypt(res_ctxt);
+			g = ckks.encrypt(res_g);
+			h = ckks.encrypt(res_h);
+			cout << "------------------------------" << endl;
+		}
 	}
 }
 
-void newton_goodGuess_seal(double x, vector<double> x0, int iter, string printmode, ckks_build& ckks)
+void beta_seal(double P, double a, double b, Ciphertext x, ckks_build& ckks)
 {
-
-
+	Plaintext minus1 = ckks.encode(-1, x, 1.0);
+	Ciphertext x2;
+	ckks.mult(minus1, x, x2, false); //25
+	Plaintext div = ckks.encode(1/(b-a), x);
+	ckks.mult(div, x2, x2, false); // 50
+	Plaintext x1 = ckks.encode(P/(b-a), x2);
+	Ciphertext x_sgn;
+	ckks.add(x1, x2, x_sgn); // 50
+	Plaintext plus1 = ckks.encode(1, x_sgn);
+	ckks.add(plus1, x_sgn); // 50
+	Plaintext half = ckks.encode(0.5, x_sgn);
+	ckks.mult(half, x_sgn, false); // 75
+	Plaintext one = ckks.encode(1.0, x_sgn, pow(2, 10));
+	ckks.mult(one, x_sgn, true);
+	
+	// 0.5 * (1+sgn(x1-x2))
+	
 }
