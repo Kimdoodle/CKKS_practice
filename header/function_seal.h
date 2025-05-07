@@ -10,3 +10,4 @@ Ciphertext max_seal(string mode, string scaleMode, Ciphertext& x, vector<double>
 
 void newton_seal(double x, vector<double> x0, int iter, string printmode, ckks_build& ckks);
 void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, ckks_build& ckks);
+void newton_goodGuess_seal(double x, vector<double> x0, int iter, string printmode, ckks_build& ckks);

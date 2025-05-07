@@ -129,6 +129,8 @@ void newton_seal(double x, vector<double> x0, int iter, string printmode, ckks_b
 			res_ctxt.resize(x0.size());
 			plain_y = newton_algorithm(x, plain_y);
 			vector<double> res_error = subVectors(res_ctxt, plain_y);
+			vector<double> res_real_error = subScalar(res_ctxt, 1 / sqrt(x));
+			res_real_error = absVectors(res_real_error);
 
 			cout << "Decryption Result:" << endl;
 			printVector(res_ctxt, false);
@@ -136,6 +138,8 @@ void newton_seal(double x, vector<double> x0, int iter, string printmode, ckks_b
 			printVector(plain_y, false);
 			cout << "Error:" << endl;
 			printVector_10eform(res_error, false);
+			cout << "Error(with real invsqrt):" << endl;
+			printVector_10eform(res_real_error, false);
 		}
 
 		iteration_scale = int(log2(y.scale()));
@@ -281,4 +285,10 @@ void goldschmidt_seal(double x, vector<double> x0, int iter, string printmode, c
 		cout << format("Remain Level: {}", y.coeff_modulus_size()) << endl;
 		cout << "------------------------------" << endl;
 	}
+}
+
+void newton_goodGuess_seal(double x, vector<double> x0, int iter, string printmode, ckks_build& ckks)
+{
+
+
 }

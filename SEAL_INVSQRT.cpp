@@ -11,13 +11,17 @@
 */
 int main() 
 {
-	//params for newton method
+	//params for approximation
+	double a = 1e-4;
+	double b = 1e1;
+	double delta = 1e-5;
 	double err = 1e-4;
+
 	double x = 2.0;
 	double answer = 1 / sqrt(x);
 	int x0_size = 10;
 	vector<double> x0 = sample_data(0, sqrt(3) / sqrt(x), x0_size);	
-	//vector<double> x0 = sample_data(0, 2, x0_size);	
+	//vector<double> x0 = sample_data(a, b, x0_size);	
 	int iter = 5;
 	string printmode = "debug";
 
@@ -34,8 +38,34 @@ int main()
 	cout << "NEWTON METHOD" << endl;
 	newton_seal(x, x0, iter, printmode, ckks);
 	cout << "#########################################################" << endl;
-	cout << "GOLDSCHMIDT METHOD(FHE)" << endl;
-	goldschmidt_seal(x, x0, iter, printmode, ckks);
+
+	cout << "NEWTON METHOD(v2)" << endl;
+
+	debug_print(format("Initial X: \t{}", x), printmode);
+	// k1, k2 계산
+	auto [k1, k2] = find_bounds(iter, delta, err, printmode);
+	debug_print(format("k1: {}", k1), printmode);
+	debug_print(format("k2: {}", k2), printmode);
+	debug_print("---------------------------------", printmode);
+
+	// L2(x2) -> P -> L1(x1) 계산
+	double x2 = solve_eq5(k1, k2, b, 400);
+	vector<double> L2 = tangent_coeff(k1, k2, x2);
+	debug_print(format("Tangent point x2:\t{}", x2), printmode);
+	double pivot = solve_eq5_for_x(k1, k2, x2, 1.0);
+	debug_print(format("Pivot point P:\t\t{}", pivot), printmode);
+	double x1 = solve_eq5(k1, k2, pivot, 1.0);
+	vector<double> L1 = tangent_coeff(k1, k2, x1);
+	debug_print(format("Tangent point x1:\t{}", x1), printmode);
+	debug_print("---------------------------------", printmode);
+	debug_print("Tangent function L1:\t", printmode);
+	printVector(L1, true);
+	debug_print("Tangent function L2:\t", printmode);
+	printVector(L2, true);
+	debug_print("---------------------------------", printmode);
+	//cout << "GOLDSCHMIDT METHOD(FHE)" << endl;
+	//goldschmidt_seal(x, x0, iter, printmode, ckks);
+
 }
 
 
